@@ -1,0 +1,3 @@
+/home/welpe/Desktop/Workspace/milkv-duo/C/app/opencv/build/CMakeFiles/main.dir
+/home/welpe/Desktop/Workspace/milkv-duo/C/app/opencv/build/CMakeFiles/edit_cache.dir
+/home/welpe/Desktop/Workspace/milkv-duo/C/app/opencv/build/CMakeFiles/rebuild_cache.dir

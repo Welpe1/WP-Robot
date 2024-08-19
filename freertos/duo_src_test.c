@@ -3,11 +3,7 @@
 #include <stdio.h>
 #include "oled_font.h"
 
-void delay_us(uint16_t us)
-{
-	us=us*10000000;
-	while(us--);
-}
+
 
 void i2c0_init(void)
 {	
