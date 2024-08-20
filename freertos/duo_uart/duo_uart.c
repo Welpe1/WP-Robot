@@ -1,6 +1,7 @@
-#include "duo_reg.h"
 #include <stdio.h>
 #include "cvi_spinlock.h"
+#include "duo_reg.h"
+#include "duo_uart.h"
 
 
 static struct uart_regs *uart4 = 0;

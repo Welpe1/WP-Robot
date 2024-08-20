@@ -1,8 +1,9 @@
 #include <stdio.h>
-#include "cvi_spinlock.h"
 #include "arch_sleep.h"
 #include "duo_reg.h"
+#include "duo_oled.h"
 #include "duo_oled_font.h"
+#include "hal_dw_i2c.h"
 
 
 uint8_t OLED_DisplayBuf[8][128];    //OLED显存数组

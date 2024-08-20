@@ -1,7 +1,6 @@
-#include "duo_reg.h"
 #include <stdio.h>
-#include "cvi_spinlock.h"
 #include "arch_sleep.h"
+#include "duo_mpu6050.h"
 
 
 uint8_t mpu6050_w_byte(uint8_t reg,uint8_t data)
@@ -44,7 +43,7 @@ void mpu6050_init(void)
 
 }
 
-void mpu6050_get_data(mpu_data *mpu)
+void mpu6050_get_data(struct mpu_data *mpu)
 {
 	mpu->accx=(mpu6050_r_byte(MPU6050_ACCEL_XOUT_H) << 8)|(mpu6050_r_byte(MPU6050_ACCEL_XOUT_L));
 	mpu->accy=(mpu6050_r_byte(MPU6050_ACCEL_YOUT_H) << 8)|(mpu6050_r_byte(MPU6050_ACCEL_YOUT_L));

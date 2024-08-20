@@ -2,9 +2,12 @@
 #define __DUO_OLED_H
 
 #include <stdio.h>
-#include "hal_dw_i2c.h"
-#include "top_reg.h"
-#include "duo_reg.h"
+
+#define OLED_8X16				8
+#define OLED_6X8				6
+#define OLED_I2C    I2C0
+#define OLED_ADDR   0x3C  //not 0x78
+
 
 void i2c0_init(void);
 void i2c0_w_sda(uint8_t enable);
