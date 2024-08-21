@@ -4,6 +4,13 @@
 #include <stdio.h>
 #include "top_reg.h"
 
+typedef struct imu_angle{
+	float roll;
+	float pitch;
+	float yaw;
+
+};
+
 typedef struct mpu_data{
 	int accx;
 	int accy;
@@ -11,7 +18,10 @@ typedef struct mpu_data{
 	int gyrox;
 	int gyroy;
 	int gyroz;
+	struct imu_angle angle;
+
 };
+
 
 
 #define MPU6050_I2C	I2C1

@@ -52,3 +52,28 @@ void mpu6050_get_data(struct mpu_data *mpu)
 	mpu->gyroy=(mpu6050_r_byte(MPU6050_GYRO_YOUT_H) << 8)|(mpu6050_r_byte(MPU6050_GYRO_YOUT_L));
 	mpu->gyroz=(mpu6050_r_byte(MPU6050_GYRO_ZOUT_H) << 8)|(mpu6050_r_byte(MPU6050_GYRO_ZOUT_L));
 }
+
+
+const float RtD = 57.2957795f;
+const float DtR = 0.0174532925f;
+const float Gyro_G = 0.06103512f;
+const float Gyro_Gr = 0.0010632f;
+
+float Q_rsqrt( float number )
+{
+    long i;
+    float x2, y;
+    const float threehalfs = 1.5F;
+ 
+    x2 = number * 0.5F;
+    y = number;
+    i = * ( long * ) &y;
+    i = 0x5f3759df - ( i >> 1 );
+    y = * ( float * ) &i;
+    y = y * ( threehalfs - ( x2 * y * y ) );//1st iteration （第一次牛顿迭代）
+
+ 
+    return y;
+}
+
+

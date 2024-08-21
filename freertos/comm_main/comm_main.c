@@ -19,8 +19,12 @@
 #include "cvi_spinlock.h"
 
 /* Milk-V Duo */
-#include "milkv_duo_io.h"
-#include "oled.h"
+#include "duo_reg.h"
+#include "duo_oled.h"
+#include "duo_uart.h"
+#include "duo_mpu6050.h"
+#include "duo_check.h"
+
 
 // #define __DEBUG__
 #ifdef __DEBUG__
@@ -29,56 +33,104 @@
 #define debug_printf(...)
 #endif
 
-
-#include "hal_dw_i2c.h"
-
+extern const uint8_t BMP1[];
+extern const uint8_t BMP2[];
+extern const uint8_t BMP3[];
+extern const uint8_t BMP4[];
 
 
 DEFINE_CVI_SPINLOCK(mailbox_lock, SPIN_MBOX);
 
+TaskHandle_t check_task_handle;
+TaskHandle_t oled_task_handle;
+TaskHandle_t imu_task_handle;
 
 
-void my_task_test()
+void oled_task()
 {
-  uint8_t data= 0,data_read;
-  printf("111111111111111111111111111111111111111111111111111111111111111111111111111\r\n");
-  hal_i2c_init(I2C0);
-	printf("hal_i2c_init after\n");
-  uint8_t *data_write =&data;
-	
-  for (;;) 
+  while(1) 
   {
-	
-	oled_full();
+    printf("oled_task running\r\n");
+		
+    oled_clear();
     oled_update();
-  
-		//i2c端口，从机地址，寄存器地址，7位从机地址，写入的数据，写1个数据
-		hal_i2c_write(I2C0, 0x01, 0x28, 1, data_write, 1);
-		hal_i2c_read(I2C0, 0x28, 0x17, 1, &data_read, 1);
-    printf("test the RTOS: %d\r\n", data);
-    vTaskDelay(100);
-    data++;
+    vTaskDelay(1);
+
+    oled_full();
+    oled_update();
+    vTaskDelay(1);
+
+    oled_show_image(0,0,128,64,BMP1);
+    oled_update();
+    vTaskDelay(1);
+   
+    oled_show_image(0,0,128,64,BMP2);
+    oled_update();
+    vTaskDelay(1);
+ 
+    oled_show_image(0,0,128,64,BMP3);
+    oled_update();
+    vTaskDelay(1);
+
+    oled_show_image(0,0,128,64,BMP4);
+    oled_update();
+    vTaskDelay(1);
+
+
   }
 
 }
 
 
-void main_cvirtos(void)
+void check_task()
 {
-	printf("create cvi task\n");
-
-	/**
-	 * 通过 request_irq 注册中断处理函数
-	 * 在 rtos_irq_handler 中通过 mailbox 机制访问读取共享内存，
-	 * 中断号 mailbox_irq 通过 platform_get_irq_byname 获取
-	 * 
-	 * 
-	 */
-  xTaskCreate(my_task_test, "my_task", 1024 * 8, NULL, 1, NULL);
-
-    vTaskStartScheduler();
-    printf("cvi task end\n");
+  uint32_t ret=0;
 	while(1)
-        ;
+	{
+    printf("check_task running\r\n");
+    if(!check_i2c_init(500))
+    {
+      printf("soft i2c0 get ready\r\n");
+      oled_init();
+      vTaskPrioritySet(oled_task_handle,2);
+      vTaskDelete(check_task_handle);
+
+      
+    }
+
+	}
+
 }
 
+void imu_task()
+{
+	uint8_t data=0;
+	struct mpu_data mpu;
+
+	while(1) 
+	{
+		mpu6050_get_data(&mpu);
+		printf("dataz=%d\r\n",mpu.accz);
+		printf("id=%d\r\n",mpu6050_get_id());
+		printf("gyrox=%d\r\n",mpu6050_get_accx());
+
+		data++;
+		
+
+	}
+
+
+}
+
+void main_cvirtos(void)
+{
+	
+
+	xTaskCreate(check_task, "check_task", 1024 * 8, NULL, 2, NULL);
+	xTaskCreate(oled_task, "oled_task", 1024 * 8, NULL, 1, NULL);
+
+
+	vTaskStartScheduler();
+
+	while(1);
+	}

@@ -6,7 +6,9 @@
 #include "hal_dw_i2c.h"
 
 
-uint8_t oled_disbuf[8][128];    //OLED显存数组
+
+uint8_t OLED_DisplayBuf[8][128];    //OLED显存数组
+
 
 
 void i2c0_init(void)
@@ -25,7 +27,7 @@ void i2c0_w_sda(uint8_t enable)
 		*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DR) &=~(1 << 29);
 	}
 	
-	arch_nsleep(10);
+	arch_usleep(1);
 }
 
 uint8_t i2c0_r_sda(void)
@@ -33,7 +35,7 @@ uint8_t i2c0_r_sda(void)
     *(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) &= ~(1 << 29);  
     uint32_t ret = *(uint32_t*)(GPIOA_BASE | GPIO_EXT_PORTA); 
     
-    arch_nsleep(10);
+    arch_usleep(1);
     *(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 29;
      
     return (ret >> 29) & 1;   
@@ -51,7 +53,7 @@ void i2c0_w_scl(uint8_t enable)
 		*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DR) &=~(1 << 28);
 	}
 	
-	arch_nsleep(10);
+	arch_usleep(1);
 }
 
 void i2c0_start(void)
@@ -133,20 +135,20 @@ uint8_t i2c0_r_byte(uint8_t ack)
 
 uint8_t oled_w_byte(uint8_t data,uint8_t cmd_data)
 {
-	
-	uint8_t reg_addr = cmd_data ? 0x40 : 0x00; // 根据cmd_data选择寄存器地址  
 
 #if USE_SOFT
 
 	i2c0_start();
 	i2c0_w_byte(0x78);
-	i2c0_w_byte(reg_addr);
+	if(cmd_data) i2c0_w_byte(0x40);
+	else i2c0_w_byte(0x00);
 	i2c0_w_byte(data);
 	i2c0_stop();
 
 #else
 
     uint8_t count = 100,ret=0;  
+    uint8_t reg_addr = cmd_data ? 0x40 : 0x00; // 根据cmd_data选择寄存器地址  
  
     while (count--) {  
 		ret=hal_i2c_write(OLED_I2C, OLED_ADDR, reg_addr, 1, &data, 1);
@@ -193,13 +195,56 @@ void oled_w_bytes(uint8_t *data, uint16_t len)
 		
 	}
 
-	// for(uint16_t i=0;i<len;i++)
-	// 		oled_w_byte(data[i],1);
-
 #endif
 
 }
 
+
+
+
+// uint8_t oled_w_byte(uint8_t data, uint8_t cmd_data)  
+// {  
+//     uint8_t count = 100,ret=0;  
+//     uint8_t reg_addr = cmd_data ? 0x40 : 0x00; // 根据cmd_data选择寄存器地址  
+ 
+//     while (count--) {  
+// 		ret=hal_i2c_write(OLED_I2C, OLED_ADDR, reg_addr, 1, &data, 1);
+//         if (!ret) {
+//             break;  
+//         }  
+//         arch_usleep(5); // 假设需要微秒级的延时  
+//     }  
+// 	return ret;		//0：成功 1：失败
+
+// }
+
+
+// // // void oled_w_bytes(uint8_t *data, uint16_t len)
+// // // {
+// // // 	for(uint16_t i=0;i<len;i++)
+// // //     	oled_w_byte(data[i],1);
+// // // }
+
+// void oled_w_bytes(uint8_t *data, uint16_t len)
+// {
+
+// 	uint8_t completed = len / 64;  
+//     uint8_t incompleted = len % 64;  
+//     uint8_t offset = 0,i=0,j=0; 
+
+// 	for(i=0;i<completed;i++)
+// 	{
+// 		hal_i2c_write(OLED_I2C,OLED_ADDR,0x40,1,&data[offset],64);
+// 		offset += 64; 
+// 	}
+// 	if(incompleted>0)
+// 	{
+	
+// 		hal_i2c_write(OLED_I2C, OLED_ADDR, 0x40, 1,&data[offset], incompleted); 
+		
+// 	}
+	
+// }
 
 
 void oled_set_cursor(uint8_t Page, uint8_t X) 
@@ -226,7 +271,7 @@ void oled_update(void)
 	for (j=0;j<8;j++)
 	{
 		oled_set_cursor(j, 0);
-		oled_w_bytes(oled_disbuf[j], 128);
+		oled_w_bytes(OLED_DisplayBuf[j], 128);
 	}
 }
 
@@ -237,7 +282,7 @@ void oled_full(void)
 	{
 		for (i=0;i<128;i++)			
 		{
-			oled_disbuf[j][i]=0xAA;	
+			OLED_DisplayBuf[j][i]=0xAA;	
 		}
 	}
 }
@@ -249,7 +294,7 @@ void oled_clear(void)
 	{
 		for (i=0;i<128;i++)			
 		{
-			oled_disbuf[j][i]=0x00;	
+			OLED_DisplayBuf[j][i]=0x00;	
 		}
 	}
 }
@@ -261,7 +306,7 @@ void oled_clear_area(uint8_t X,uint8_t Y,uint8_t Width,uint8_t Height)
 	{
 		for (i=X;i<X+Width;i++)	//遍历指定列
 		{
-			if(i<=127&&j<=63) oled_disbuf[j/8][i]&=~(0x01<<(j%8));	//将显存数组指定数据清零
+			if(i<=127&&j<=63) OLED_DisplayBuf[j/8][i]&=~(0x01<<(j%8));	//将显存数组指定数据清零
 
 		}
 	}
@@ -286,8 +331,8 @@ void oled_show_image(uint8_t X, uint8_t Y, uint8_t Width, uint8_t Height, const 
 				/*负数坐标在计算页地址和移位时需要加一个偏移*/
 				Page = Y / 8;
 				Shift = Y % 8;
-				if (Page + j <= 7) oled_disbuf[Page + j][X + i] |= Image[j * Width + i] << (Shift);
-				if (Page + j + 1 <= 7) oled_disbuf[Page + j + 1][X + i] |= Image[j * Width + i] >> (8 - Shift);
+				if (Page + j <= 7) OLED_DisplayBuf[Page + j][X + i] |= Image[j * Width + i] << (Shift);
+				if (Page + j + 1 <= 7) OLED_DisplayBuf[Page + j + 1][X + i] |= Image[j * Width + i] >> (8 - Shift);
 				
 			}
 		}
@@ -413,36 +458,39 @@ void oled_show_floatnum(uint8_t X, uint8_t Y, double Number, uint8_t IntLength, 
 
 void oled_init(void)
 {
+	uint8_t ret=0,count=100;
+	//hal_i2c_init(OLED_I2C);
 
-#if USE_SOFT
-	i2c0_init();
-#else
-	hal_i2c_init(OLED_I2C);
-#endif
+	while(count--)
+	{
+		ret+=oled_w_byte(0xAE,0);	//设置显示开启/关闭，0xAE关闭，0xAF开启
+		ret+=oled_w_byte(0xD5,0);	//设置显示时钟分频比/振荡器频率
+		ret+=oled_w_byte(0x80,0);	//0x00~0xFF
+		ret+=oled_w_byte(0xA8,0);	//设置多路复用率
+		ret+=oled_w_byte(0x3F,0);	//0x0E~0x3F
+		ret+=oled_w_byte(0xD3,0);	//设置显示偏移
+		ret+=oled_w_byte(0x00,0);	//0x00~0x7F
+		ret+=oled_w_byte(0x40,0);	//设置显示开始行，0x40~0x7F
+		ret+=oled_w_byte(0xA1,0);	//设置左右方向，0xA1正常，0xA0左右反置
+		ret+=oled_w_byte(0xC8,0);	//设置上下方向，0xC8正常，0xC0上下反置
+		ret+=oled_w_byte(0xDA,0);	//设置COM引脚硬件配置
+		ret+=oled_w_byte(0x12,0);
+		ret+=oled_w_byte(0x81,0);	//设置对比度
+		ret+=oled_w_byte(0xCF,0);	//0x00~0xFF
+		ret+=oled_w_byte(0xD9,0);	//设置预充电周期
+		ret+=oled_w_byte(0xF1,0);
+		ret+=oled_w_byte(0xDB,0);	//设置VCOMH取消选择级别
+		ret+=oled_w_byte(0x30,0);
+		ret+=oled_w_byte(0xA4,0);	//设置整个显示打开/关闭
+		ret+=oled_w_byte(0xA6,0);	//设置正常/反色显示，0xA6正常，0xA7反色
+		ret+=oled_w_byte(0x8D,0);	//设置充电泵
+		ret+=oled_w_byte(0x14,0);
+		ret+=oled_w_byte(0xAF,0);	//开启显示
+		if(!ret) break;
+
+	}
 	
-	oled_w_byte(0xAE,0);	//设置显示开启/关闭，0xAE关闭，0xAF开启
-	oled_w_byte(0xD5,0);	//设置显示时钟分频比/振荡器频率
-	oled_w_byte(0x80,0);	//0x00~0xFF
-	oled_w_byte(0xA8,0);	//设置多路复用率
-	oled_w_byte(0x3F,0);	//0x0E~0x3F
-	oled_w_byte(0xD3,0);	//设置显示偏移
-	oled_w_byte(0x00,0);	//0x00~0x7F
-	oled_w_byte(0x40,0);	//设置显示开始行，0x40~0x7F
-	oled_w_byte(0xA1,0);	//设置左右方向，0xA1正常，0xA0左右反置
-	oled_w_byte(0xC8,0);	//设置上下方向，0xC8正常，0xC0上下反置
-	oled_w_byte(0xDA,0);	//设置COM引脚硬件配置
-	oled_w_byte(0x12,0);
-	oled_w_byte(0x81,0);	//设置对比度
-	oled_w_byte(0xCF,0);	//0x00~0xFF
-	oled_w_byte(0xD9,0);	//设置预充电周期
-	oled_w_byte(0xF1,0);
-	oled_w_byte(0xDB,0);	//设置VCOMH取消选择级别
-	oled_w_byte(0x30,0);
-	oled_w_byte(0xA4,0);	//设置整个显示打开/关闭
-	oled_w_byte(0xA6,0);	//设置正常/反色显示，0xA6正常，0xA7反色
-	oled_w_byte(0x8D,0);	//设置充电泵
-	oled_w_byte(0x14,0);
-	oled_w_byte(0xAF,0);	//开启显示
+
 	oled_clear();				//清空显存数组
 	oled_update();				//更新显示，清屏，防止初始化后未显示内容时花屏
 } 
