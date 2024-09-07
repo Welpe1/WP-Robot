@@ -15,6 +15,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "middleware.c"
+
 void* Video_Capture(void *args)
 {
 
