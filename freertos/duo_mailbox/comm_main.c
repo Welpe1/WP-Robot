@@ -19,21 +19,72 @@
 #include "cvi_spinlock.h"
 
 /* Milk-V Duo */
+#include "duo_reg.h"
+#include "duo_oled.h"
+#include "duo_uart.h"
+#include "duo_mpu6050.h"
+#include "duo_check.h"
 
-#define GPIO2 0x03022000
-#define GPIO_SWPORTA_DR 0x000
-#define GPIO_SWPORTA_DDR 0x004
 
-void duo_led_control(int enable)
+extern const uint8_t BMP1[];
+extern const uint8_t BMP2[];
+extern const uint8_t BMP3[];
+extern const uint8_t BMP4[];
+
+uint8_t flag=0;
+uint8_t *value;
+
+DEFINE_CVI_SPINLOCK(mailbox_lock, SPIN_MBOX);
+
+TaskHandle_t check_task_handle;
+TaskHandle_t oled_task_handle;
+TaskHandle_t imu_task_handle;
+
+
+void oled_task()
 {
-	*(uint32_t*)(GPIO2 | GPIO_SWPORTA_DDR) = 1 << 24;
+  while(1) 
+  {
+    printf("oled_task running\r\n");
+		
+    oled_clear();
+	oled_update();
+    if(flag==1)
+    {
+        oled_show_image(0,0,128,64,value);
+        oled_update();
+        flag=0;
+        
+    }
+    vTaskDelay(100);
 
-	if (enable) {
-		*(uint32_t*)(GPIO2 | GPIO_SWPORTA_DR) = 1 << 24;
-	} else {
-		*(uint32_t*)(GPIO2 | GPIO_SWPORTA_DR) = 0;
-	}
+  }
+
 }
+
+
+void check_task()
+{
+  uint32_t ret=0;
+	while(1)
+	{
+		printf("check_task running\r\n");
+		if(!check_i2c_init(50))
+		{
+		  printf("soft i2c0 get ready\r\n");
+		  oled_init();
+		  xTaskCreate(oled_task, "oled_task", 1024 * 8, NULL, 1, NULL);
+		  vTaskDelete(check_task_handle);
+		  
+		}
+		vTaskDelay(10);
+
+	}
+
+}
+
+
+
 
 
 QueueHandle_t queue_handle;
@@ -46,7 +97,6 @@ volatile struct mailbox_set_register *mbox_reg;
 volatile struct mailbox_done_register *mbox_done_reg;
 volatile unsigned long *mailbox_context; // mailbox buffer context is 64 Bytess
 
-DEFINE_CVI_SPINLOCK(mailbox_lock, SPIN_MBOX);
 
 void main_cvirtos(void)
 {
@@ -64,10 +114,12 @@ void main_cvirtos(void)
 		xTaskCreate(mailbox_task,"mailbox_task",configMINIMAL_STACK_SIZE, NULL,tskIDLE_PRIORITY + 5, NULL);		//创建任务
 
 	}
+    xTaskCreate(check_task, "check_task", 1024 * 8, NULL, 1, NULL);
     vTaskStartScheduler();
     printf("cvi task end\n");
 	while(1);
 }
+
 
 void mailbox_task(void)
 {
@@ -92,43 +144,19 @@ void mailbox_task(void)
 	while(1) {
 		xQueueReceive(queue_handle, &from_linux, portMAX_DELAY);
 		switch (from_linux.cmd_id) {
-			case CMD_TEST_A:
-				//send to C906B
-				from_linux.cmd_id = CMD_TEST_A;
-				from_linux.param_ptr = 0x12345678;
-				from_linux.resv.valid.rtos_valid = 1;	//标记该mailbox已经被rtos使用
-				from_linux.resv.valid.linux_valid = 0;	//标记该mailbox未被linux使用
-				goto send_label;
-			case CMD_TEST_B:
-				break;
+			
 			case CMD_TEST_C:
 				from_linux.cmd_id = CMD_TEST_C;
-				from_linux.param_ptr = 0x55aa;
+				//from_linux.param_ptr = 0x55aa;
 				from_linux.resv.valid.rtos_valid = 1;
 				from_linux.resv.valid.linux_valid = 0;
-				// printf("recv cmd(%d) from C906B...send [0x%x] to C906B\n", from_linux.cmd_id, from_linux.param_ptr);
-				goto send_label;
-			case CMD_DUO_LED:
-				from_linux.cmd_id = CMD_DUO_LED;
-				if (from_linux.param_ptr == DUO_LED_ON) {
-					duo_led_control(1);
-				} else {
-					duo_led_control(0);
-				}
-				from_linux.param_ptr = DUO_LED_DONE;
-				from_linux.resv.valid.rtos_valid = 1;
-				from_linux.resv.valid.linux_valid = 0;
-				printf("recv cmd(%d) from C906B...send [0x%x] to C906B\n", from_linux.cmd_id, from_linux.param_ptr);
+                printf("phy_addr=%p\r\n",from_linux.param_ptr);
+
+				value=(volatile uint8_t*) from_linux.param_ptr;
+                flag=1;
+		
 				goto send_label;
 
-			case CMD_TEST:
-				from_linux.cmd_id = CMD_TEST;
-				
-				//from_linux.param_ptr = 0xBB;
-				from_linux.resv.valid.rtos_valid = 1;
-				from_linux.resv.valid.linux_valid = 0;
-				printf("recv cmd(%d) from C906B...send [0x%x] to C906B\n", from_linux.cmd_id, from_linux.param_ptr);
-				goto send_label;
 			default:
 send_label:
 				/* used to send command to linux*/

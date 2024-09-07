@@ -10,12 +10,26 @@
  */
 uint8_t check_register(uint32_t reg,uint32_t value)
 {
-    uint32_t ret=0;
-    ret=*(uint32_t*)(reg);
-    if(ret==value) return 0;
+
+    if(*(uint32_t*)(reg)==value) return 0;
     else return 1;
 
 }
+
+
+
+// uint8_t check_register(uint32_t reg,uint32_t value)
+// {
+//     *(uint32_t*)(reg) = value;   
+//     if (*(uint32_t*)(reg) == value) {  
+//         return 0;  
+//     }else{  
+//         printf("try to change reg to %d fail\r\n",value);
+//         return 1;  
+//     }  
+  
+// }
+
 
 /**
  * @brief 检查软件i2c引脚复用是否正确（0：正确，1：错误）

@@ -1,33 +1,164 @@
 #include <stdio.h>
 #include "arch_sleep.h"
 #include "duo_mpu6050.h"
+#include "duo_reg.h"
 
+/**
+ * 使用软件i2c
+ * 自定义i2c5
+ * sda gpa23
+ * scl gpa24
+ * 
+ */
+
+
+void i2c5_init(void)
+{	
+	*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 23;       //设置为输出
+	*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 24;
+
+}
+
+void i2c5_w_sda(uint8_t enable)
+{
+	*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 23;       //设置为输出
+	if (enable) {
+		*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DR) |= 1 << 23;
+	} else {
+		*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DR) &=~(1 << 23);
+	}
+	
+	arch_usleep(10);
+}
+
+uint8_t i2c5_r_sda(void)
+{
+    *(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) &= ~(1 << 24);  
+    uint32_t ret = *(uint32_t*)(GPIOA_BASE | GPIO_EXT_PORTA); 
+    
+    arch_usleep(10);
+    *(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 24;
+     
+    return (ret >> 24) & 1;   
+    
+
+}
+
+void i2c5_w_scl(uint8_t enable)
+{
+	*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 23;
+
+	if (enable) {
+		*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DR) |= 1 << 23;
+	} else {
+		*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DR) &=~(1 << 23);
+	}
+	
+	arch_usleep(10);
+}
+
+void i2c5_start(void)
+{
+	i2c5_w_sda(1);
+	i2c5_w_scl(1);
+	i2c5_w_sda(0);
+	i2c5_w_scl(0);
+
+}
+
+void i2c5_stop(void)
+{
+	i2c5_w_sda(0);
+	i2c5_w_scl(1);
+	i2c5_w_sda(1);
+
+}
+
+
+uint8_t i2c5_wait_ack(void)
+{
+	uint8_t errtime=0;
+	i2c5_w_sda(1);
+	i2c5_w_scl(1);
+	while(i2c5_r_sda())
+	{
+		errtime++;
+		if(errtime>50)
+		{
+			i2c5_stop();
+			return 1;	//无应答
+		}
+	}
+	i2c5_w_scl(0);
+	return 0;	//有应答
+}
+
+void i2c5_w_ack(uint8_t ack)
+{
+	i2c5_w_scl(0);
+	if(ack) i2c5_w_sda(0);
+	else i2c5_w_sda(1);
+	i2c5_w_scl(1);
+	i2c5_w_scl(0);
+
+}
+
+void i2c5_w_byte(uint8_t byte)
+{
+	uint8_t i=0;
+	for(i=0;i<8;i++)
+	{
+		i2c5_w_sda(!!(byte & (0x80>>i)));
+		i2c5_w_scl(1);
+		i2c5_w_scl(0);
+
+	}
+
+}
+
+uint8_t i2c5_r_byte(uint8_t ack)
+{
+	uint8_t i=0,ret=0;
+    i2c5_w_sda(1);
+	for(i=0;i<8;i++)
+	{
+		i2c5_w_scl(1);
+		if(i2c5_r_sda()) {ret|=(0x80>>i);}
+		i2c5_w_scl(0);
+
+	}
+    i2c5_w_ack(ack);
+	return ret;
+}
 
 uint8_t mpu6050_w_byte(uint8_t reg,uint8_t data)
 {
-	uint8_t count = 20,ret=0;  
-    while (count--) {  
-		ret=hal_i2c_write(MPU6050_I2C,MPU6050_ADDR, reg,1, &data,1);
-        if (!ret) {
-            break;  
-        }  
-        arch_usleep(5); // 假设需要微秒级的延时  
-    }  
-	return ret;		//0：成功 1：失败
+	i2c5_start();
+    i2c5_w_byte(MPU6050_ADDR);
+    i2c5_wait_ack();
+    i2c5_w_byte(reg);
+    i2c5_wait_ack();
+    i2c5_w_byte(data);
+    i2c5_wait_ack();
+    i2c5_stop();
 
 }
 
 uint8_t mpu6050_r_byte(uint8_t reg)
 {
-	uint8_t count = 20,ret=0,revbuf;
-	 while (count--) {  
-		ret=hal_i2c_read(MPU6050_I2C,MPU6050_ADDR,reg,1,&revbuf,1);
-        if (!ret) {
-            break;  
-        }  
-        arch_usleep(5); // 假设需要微秒级的延时  
-    }  
-	return revbuf;
+	uint8_t data;
+    i2c5_start();
+    i2c5_w_byte(MPU6050_ADDR);
+    i2c5_wait_ack();
+    i2c5_w_byte(reg);
+    i2c5_wait_ack();
+
+    i2c5_start();
+    i2c5_w_byte(MPU6050_ADDR|0x01);
+    i2c5_wait_ack();
+    data=i2c5_r_byte(1);
+    i2c5_stop();
+
 }
 
 
@@ -41,6 +172,11 @@ void mpu6050_init(void)
 	mpu6050_w_byte(MPU6050_GYRO_CONFIG, 0x18);
 	mpu6050_w_byte(MPU6050_ACCEL_CONFIG, 0x18);
 
+}
+
+uint8_t mpu6050_get_id(void)
+{
+	return mpu6050_r_byte(MPU6050_WHO_AM_I);
 }
 
 void mpu6050_get_data(struct mpu_data *mpu)

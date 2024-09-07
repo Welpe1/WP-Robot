@@ -62,13 +62,13 @@ typedef struct {
   SAMPLE_TDL_MW_CONTEXT *pstMWContext;    //Middleware上下文结构体
   cvitdl_service_handle_t stServiceHandle;    //TDL SDK Service句柄
   pthread_mutex_t Mutex;    //互斥锁
-}VIDEOCAPTURE_THREAD_ARGS;     //视频捕获线程结构体
+}VideoCapture_Args;     //视频捕获线程结构体
 
 //视频捕获线程
 void *VideoCapture(void *args) {
   int ret=0;
   printf("Enter encoder thread\n");
-  VIDEOCAPTURE_THREAD_ARGS *pstArgs = (VIDEOCAPTURE_THREAD_ARGS *)args;
+  VideoCapture_Args *pstArgs = (VideoCapture_Args *)args;
   VIDEO_FRAME_INFO_S stFrame;   //视频帧信息结构体
   
   while (bExit == false) {
@@ -232,7 +232,7 @@ int main(int argc, char *argv[]) {
   SAMPLE_TDL_MW_CONTEXT stMWContext = {0};    //Middleware上下文结构体
   cvitdl_handle_t stTDLHandle = NULL;
   cvitdl_service_handle_t stServiceHandle = NULL;
-  VIDEOCAPTURE_THREAD_ARGS video_thread_args = {
+  VideoCapture_Args video_thread_args = {
       .pstMWContext = &stMWContext,
       .stServiceHandle = stServiceHandle,
   };

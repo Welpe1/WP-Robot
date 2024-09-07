@@ -24,7 +24,7 @@ typedef struct mpu_data{
 
 
 
-#define MPU6050_I2C	I2C1
+#define MPU6050_I2C	i2c5
 #define MPU6050_ADDR	0xD0
 
 #define	MPU6050_SMPLRT_DIV		0x19
@@ -51,9 +51,20 @@ typedef struct mpu_data{
 #define	MPU6050_PWR_MGMT_2		0x6C
 #define	MPU6050_WHO_AM_I		0x75
 
+void i2c5_init(void);
+void i2c5_w_sda(uint8_t enable);
+uint8_t i2c5_r_sda(void);
+void i2c5_w_scl(uint8_t enable);
+void i2c5_start(void);
+void i2c5_stop(void);
+uint8_t i2c5_wait_ack(void);
+void i2c5_w_ack(uint8_t ack);
+void i2c5_w_byte(uint8_t byte);
+uint8_t i2c5_r_byte(uint8_t ack);
 uint8_t mpu6050_w_byte(uint8_t reg,uint8_t data);
 uint8_t mpu6050_r_byte(uint8_t reg);
 void mpu6050_init(void);
+uint8_t mpu6050_get_id(void);
 void mpu6050_get_data(struct mpu_data *mpu);
 
 

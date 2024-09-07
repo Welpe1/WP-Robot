@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "arch_sleep.h"
 #include "duo_reg.h"
+#include "duo_gpio.h"
 #include "duo_oled.h"
 #include "duo_oled_font.h"
 #include "hal_dw_i2c.h"
@@ -11,46 +12,24 @@ uint8_t oled_disbuf[8][128];    //OLED显存数组
 
 void i2c0_init(void)
 {	
-	*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 29;       //设置为输出
-	*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 28;
-
+	gpio_w_pin(GPIOA,29,0);
+	gpio_w_pin(GPIOA,28,0);
 }
 
 void i2c0_w_sda(uint8_t enable)
 {
-	*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 29;       //设置为输出
-	if (enable) {
-		*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DR) |= 1 << 29;
-	} else {
-		*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DR) &=~(1 << 29);
-	}
-	
+	gpio_w_pin(GPIOA,29,enable);
 	arch_nsleep(10);
 }
 
 uint8_t i2c0_r_sda(void)
 {
-    *(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) &= ~(1 << 29);  
-    uint32_t ret = *(uint32_t*)(GPIOA_BASE | GPIO_EXT_PORTA); 
-    
-    arch_nsleep(10);
-    *(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 29;
-     
-    return (ret >> 29) & 1;   
-    
-
+    return gpio_r_pin(GPIOA,29);  
 }
 
 void i2c0_w_scl(uint8_t enable)
 {
-	*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 28;
-
-	if (enable) {
-		*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DR) |= 1 << 28;
-	} else {
-		*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DR) &=~(1 << 28);
-	}
-	
+	gpio_w_pin(GPIOA,28,enable);
 	arch_nsleep(10);
 }
 
@@ -110,8 +89,11 @@ void i2c0_w_byte(uint8_t byte)
 		i2c0_w_scl(0);
 
 	}
-	i2c0_w_scl(1);	//额外的一个时钟，不处理应答信号
-	i2c0_w_scl(0);
+	
+	i2c0_wait_ack();
+
+	// i2c0_w_scl(1);	//额外的一个时钟，不处理应答信号
+	// i2c0_w_scl(0);
 
 }
 

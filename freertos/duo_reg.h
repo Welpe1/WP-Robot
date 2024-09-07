@@ -9,9 +9,20 @@
 #define GPIOD_BASE          0x03023000  //gpiochip3
 #define PWR_GPIO_BASE       0x05021000  //gpiochip4
 
-#define GPIO_SWPORTA_DR     0x000  //GPIO输出数据寄存器偏移地址
-#define GPIO_EXT_PORTA      0x050  //GPIO输入数据寄存器偏移地址
-#define GPIO_SWPORTA_DDR    0x004  //GPIO端口方向设置寄存器偏移地址（0输入 1输出）
+#define GPIO_SWPORTA_DR     0x000   //GPIO输出数据寄存器偏移地址
+#define GPIO_EXT_PORTA      0x050   //GPIO输入数据寄存器偏移地址
+#define GPIO_SWPORTA_DDR    0x004   //GPIO端口方向设置寄存器偏移地址（0输入 1输出）
+#define GPIO_INTEN          0x030   //中断使能寄存器
+#define GPIO_INTMASK        0x034 
+#define GPIO_INTTYPE_LEVEL  0x038   //选择电平触发或边沿触发
+#define GPIO_INT_POLARITY   0x03C   //选择低电平/高电平触发和下降沿/上升沿触发
+#define GPIO_INTSTATUS      0x040   //中断状态寄存器
+#define GPIO_RAW_INTSTATUS  0x044
+#define GPIO_DEBOUNCE       0x048
+#define GPIO_PORTA_EOI      0x04C   //中断清除寄存器
+#define GPIO_EXT_PORTA      0x050
+#define GPIO_LS_SYNC        0x060
+
 
 //UART0~3在top_reg.h中有定义
 #define UART4_BASE          0x041C0000
@@ -48,6 +59,8 @@
 #define PINMUX_BASE         0x03001000
 #define PINMUX_GP0          0x4C
 #define PINMUX_GP1          0x50
+#define PINMUX_GP16         0x3C
+#define PINMUX_GP17         0x40
 
 
 
