@@ -1,15 +1,18 @@
 #通用makefile
 
 TARGET = main
-CHIP ?= cv180x
+#cv180x(64) cv181x(256)
+CHIP ?= cv181x
 
 MILKV_DUO=/home/welpe/Desktop/Workspace/milkv-duo
 SDK=${MILKV_DUO}/C/sdk
 HOST_TOOLS=${SDK}/duo-buildroot-sdk/host-tools
 SYSROOT = ${SDK}/rootfs
 ifeq ($(CHIP),cv180x)
+	USE_TPU_IVE=ON
     CVI_TDL_SDK=${SDK}/cvitek-tdl-sdk-cv180x
-else ifeq ($(CHIP), sg200x)  
+else ifeq ($(CHIP), cv181x)  
+	USE_TPU_IVE=OFF
     CVI_TDL_SDK=${SDK}/cvitek-tdl-sdk-sg200x
 endif
 MW_PATH=$(CVI_TDL_SDK)/sample/3rd/middleware/v2
@@ -35,8 +38,17 @@ MW_PANEL_INC_PATH += ${MW_PATH}/include/panel
 MW_SAMPLE_PATH = $(MW_PATH)/sample/common
 MW_3RD_LIB_PATH = $(MW_LIB_PATH)/3rd
 MW_AUDIO_LIBS = -lcvi_audio -lcvi_vqe -lcvi_ssp -ltinyalsa -lcvi_VoiceEngine -lcvi_RES1 -lcli
+
+
 MW_LIBS = -lini -lsns_full -lsample -lisp -lvdec -lvenc -lawb -lae -laf -lcvi_bin -lcvi_bin_isp -lmisc -lisp_algo -lsys -lvpu
-MW_ISP_INC_PATH = $(MW_INC_PATH)/isp/cv180x
+
+ifeq ($(CHIP),cv180x)
+    MW_ISP_INC_PATH = $(MW_INC_PATH)/isp/cv180x
+	CFLAGS += -DCV180X
+else ifeq ($(CHIP), cv181x)  
+    MW_ISP_INC_PATH = $(MW_INC_PATH)/isp/cv181x
+	CFLAGS += -DCV181X
+endif
 
 # TDL SDK stuffs
 SDK_ROOT_PATH ?= $(CVI_TDL_SDK)
@@ -59,9 +71,17 @@ TPU_LIB_PATH = $(TPU_PATH)/lib
 TPU_LIBS = -lcnpy  -lcvikernel  -lcvimath  -lcviruntime  -lz -lm
 
 # IVE stuffs
-IVE_SDK_LIB_PATH = $(IVE_PATH)/lib
-IVE_SDK_INC_PATH = $(IVE_PATH)/include
-IVE_LIBS = -lcvi_ive_tpu
+ifeq ($(USE_TPU_IVE), ON)
+	IVE_SDK_LIB_PATH = $(IVE_PATH)/lib
+	IVE_SDK_INC_PATH = $(IVE_PATH)/include
+	IVE_LIBS = -lcvi_ive_tpu
+	CFLAGS += -DUSE_TPU_IVE
+else
+	IVE_SDK_LIB_PATH = $(MW_PATH)/lib
+	IVE_SDK_INC_PATH = $(MW_PATH)/include
+	IVE_LIBS = -lcvi_ive
+endif
+
 
 # RTSP stuffs
 RTSP_LIB_PATH = $(SDK_ROOT_PATH)/sample/3rd/rtsp/lib
@@ -92,8 +112,6 @@ LDFLAGS += -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 CFLAGS += -O3 -DNDEBUG \
 		  -mcpu=c906fdv -march=rv64imafdcv0p7xthead -mcmodel=medany -mabi=lp64d \
 		  -D_MIDDLEWARE_V2_ \
-		  -DCV180X \
-		  -DUSE_TPU_IVE \
 		  -std=gnu11 -Wno-pointer-to-int-cast -fsigned-char -Wno-format-truncation -fdiagnostics-color=always -s -lpthread -latomic \
 	
 
@@ -139,8 +157,12 @@ OBJS+=$(SDK_ROOT_PATH)/sample/utils/sample_utils.o \
 		$(SDK_ROOT_PATH)/sample/utils/middleware_utils.o \
         $(SDK_ROOT_PATH)/sample/utils/vi_vo_utils.o \
 
+LIBS+=$(SAMPLE_VI_LIBS) \
+		${SYSROOT_LIBS}	\
+		${SAMPLE_APP_LIBS} \
+
 $(TARGET): $(OBJS) 
-	$(CC) $(CFLAGS) $(LDFLAGS) $(SAMPLE_VI_LIBS) ${SYSROOT_LIBS} -o $@ $^
+	$(CC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $@ $^
 
 
 
