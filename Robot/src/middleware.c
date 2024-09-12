@@ -32,16 +32,22 @@ int MiddleWare_Init(SAMPLE_TDL_MW_CONTEXT *stMWContext)
   }
 
   //设置编码器图像尺寸
+  // SIZE_S stVencSize = {
+  //     .u32Width = 1280,
+  //     .u32Height = 720,
+  // };
+
   SIZE_S stVencSize = {
-      .u32Width = 1280,
-      .u32Height = 720,
+      .u32Width = 1920,
+      .u32Height = 1080,
   };
 
   stMWConfig.stVBPoolConfig.u32VBPoolCount = 3;
 
   // VBPool 0 for VPSS Grp0 Chn0
   stMWConfig.stVBPoolConfig.astVBPoolSetup[0].enFormat = VI_PIXEL_FORMAT;
-  stMWConfig.stVBPoolConfig.astVBPoolSetup[0].u32BlkCount = 2;
+  //stMWConfig.stVBPoolConfig.astVBPoolSetup[0].u32BlkCount = 2;
+  stMWConfig.stVBPoolConfig.astVBPoolSetup[0].u32BlkCount = 3;
   stMWConfig.stVBPoolConfig.astVBPoolSetup[0].u32Height = stSensorSize.u32Height;
   stMWConfig.stVBPoolConfig.astVBPoolSetup[0].u32Width = stSensorSize.u32Width;
   stMWConfig.stVBPoolConfig.astVBPoolSetup[0].bBind = true;
@@ -50,7 +56,8 @@ int MiddleWare_Init(SAMPLE_TDL_MW_CONTEXT *stMWContext)
 
   // VBPool 1 for VPSS Grp0 Chn1
   stMWConfig.stVBPoolConfig.astVBPoolSetup[1].enFormat = VI_PIXEL_FORMAT;
-  stMWConfig.stVBPoolConfig.astVBPoolSetup[1].u32BlkCount = 2;
+  // stMWConfig.stVBPoolConfig.astVBPoolSetup[1].u32BlkCount = 2;
+  stMWConfig.stVBPoolConfig.astVBPoolSetup[1].u32BlkCount = 3;
   stMWConfig.stVBPoolConfig.astVBPoolSetup[1].u32Height = stVencSize.u32Height;
   stMWConfig.stVBPoolConfig.astVBPoolSetup[1].u32Width = stVencSize.u32Width;
   stMWConfig.stVBPoolConfig.astVBPoolSetup[1].bBind = true;
@@ -103,3 +110,4 @@ int MiddleWare_Init(SAMPLE_TDL_MW_CONTEXT *stMWContext)
   return 0;
 
 }
+

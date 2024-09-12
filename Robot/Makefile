@@ -1,13 +1,15 @@
-#通用makefile
 
 TARGET = main
 #cv180x(64) cv181x(256)
 CHIP ?= cv181x
 
-MILKV_DUO=/home/welpe/Desktop/Workspace/milkv-duo
-SDK=${MILKV_DUO}/C/sdk
-HOST_TOOLS=${SDK}/duo-buildroot-sdk/host-tools
-SYSROOT = ${SDK}/rootfs
+MILKV_DUO = /home/welpe/Desktop/Workspace/milkv-duo
+SDK = $(MILKV_DUO)/C/sdk
+APP = $(MILKV_DUO)/C/app
+HOST_TOOLS = $(SDK)/duo-buildroot-sdk/host-tools
+SYSROOT = $(SDK)/rootfs
+ROBOT = $(APP)/Robot
+
 ifeq ($(CHIP),cv180x)
 	USE_TPU_IVE=ON
     CVI_TDL_SDK=${SDK}/cvitek-tdl-sdk-cv180x
@@ -15,6 +17,7 @@ else ifeq ($(CHIP), cv181x)
 	USE_TPU_IVE=OFF
     CVI_TDL_SDK=${SDK}/cvitek-tdl-sdk-sg200x
 endif
+
 MW_PATH=$(CVI_TDL_SDK)/sample/3rd/middleware/v2
 TPU_PATH=$(CVI_TDL_SDK)/sample/3rd/tpu
 IVE_PATH=$(CVI_TDL_SDK)/sample/3rd/ive
@@ -31,6 +34,11 @@ WIRINGX_LIB_PATH = $(SYSROOT)/usr/lib
 WIRINGX_INC_PATH = $(SYSROOT)/usr/include
 WIRINGX_LIBS = -lwiringx
 
+#Robot stuffs
+ROBOT_LIB_PATH = $(ROBOT)/lib
+ROBOT_INC_PATH = $(ROBOT)/include
+ROBOT_OLED_LIBS = -loledfont
+
 # Middleware stuffs
 MW_LIB_PATH = $(MW_PATH)/lib
 MW_INC_PATH = $(MW_PATH)/include
@@ -38,8 +46,6 @@ MW_PANEL_INC_PATH += ${MW_PATH}/include/panel
 MW_SAMPLE_PATH = $(MW_PATH)/sample/common
 MW_3RD_LIB_PATH = $(MW_LIB_PATH)/3rd
 MW_AUDIO_LIBS = -lcvi_audio -lcvi_vqe -lcvi_ssp -ltinyalsa -lcvi_VoiceEngine -lcvi_RES1 -lcli
-
-
 MW_LIBS = -lini -lsns_full -lsample -lisp -lvdec -lvenc -lawb -lae -laf -lcvi_bin -lcvi_bin_isp -lmisc -lisp_algo -lsys -lvpu
 
 ifeq ($(CHIP),cv180x)
@@ -96,7 +102,7 @@ MD_INC_PATH = $(SDK_ROOT_PATH)/include/cvi_md
 DRAW_RECT_INC_PATH = $(SDK_ROOT_PATH)/include/cvi_draw_rect
 PREPROCESS_INC_PATH = $(SDK_ROOT_PATH)/include/cvi_preprocess
 
-
+ROBOT_LIBS = $(ROBOT_OLED_LIBS) -L$(ROBOT_LIB_PATH)
 SYSROOT_LIBS = ${WIRINGX_LIBS} -L${WIRINGX_LIB_PATH}
 SAMPLE_BASE_LIBS = -L$(TPU_LIB_PATH) $(TPU_LIBS) -L$(IVE_SDK_LIB_PATH) $(IVE_LIBS) -L$(SDK_LIB_PATH) $(SDK_TDL_LIBS)
 SAMPLW_MW_LIB = -L$(MW_LIB_PATH) -L$(MW_3RD_LIB_PATH) $(MW_LIBS)
@@ -132,7 +138,8 @@ CFLAGS += -I$(SDK_INC_PATH) \
 		  -I$(MW_INC_PATH) \
 		  -I$(MW_INC_PATH)/linux \
           -I$(AISDK_ROOT_PATH)/include/stb \
-		  -I$(WIRINGX_INC_PATH) 
+		  -I$(WIRINGX_INC_PATH) \
+		  -I$(ROBOT_INC_PATH) \
 
 
 
@@ -159,6 +166,7 @@ OBJS+=$(SDK_ROOT_PATH)/sample/utils/sample_utils.o \
 
 LIBS+=$(SAMPLE_VI_LIBS) \
 		${SYSROOT_LIBS}	\
+		${ROBOT_LIBS}	\
 		${SAMPLE_APP_LIBS} \
 
 $(TARGET): $(OBJS) 
