@@ -86,7 +86,7 @@ void check_task()
 		  printf("soft i2c0 get ready\r\n");
 		  oled_init();
 		  xTaskCreate(oled_task, "oled_task", 1024 * 8, NULL, 1, NULL);
-		  vTaskDelete(check_task_handle);
+		  vTaskDelete(NULL);
 		  
 		}
 		vTaskDelay(50);

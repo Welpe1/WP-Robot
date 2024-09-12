@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include "middleware.h"
 
-
 int MiddleWare_Init(SAMPLE_TDL_MW_CONTEXT *stMWContext)
 {
   SAMPLE_TDL_MW_CONFIG_S stMWConfig = {0};

@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "milkv-duo",
+            "includePath": [
+                "${workspaceFolder}/sdk/**",
+                "${workspaceFolder}/app/**",
+                "${workspaceFolder}/app/linux/**",
+                "${workspaceFolder}/sdk/tdl_sdk-master/**",
+                "${workspaceFolder}/sdk/freertos/**"
+                
+            ],
+            "defines": [],
+            "compilerPath": "D:/mingw64/bin/gcc.exe",
+            "cStandard": "c11",
+            "cppStandard": "gnu++11",
+            "intelliSenseMode": "linux-gcc-x86"
+        }
+    ],
+    "version": 4
+}

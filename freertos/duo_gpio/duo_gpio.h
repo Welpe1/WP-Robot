@@ -2,6 +2,7 @@
 #define __DUO_GPIO_H
 
 #include "duo_reg.h"
+#include <stdint.h>
 
 struct gpio_regs
 {
