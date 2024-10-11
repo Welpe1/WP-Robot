@@ -39,13 +39,11 @@ int main(int argc, char *argv[]) {
 	}
 
 	cvitdl_handle_t cvi_handle = NULL;
-	cvitdl_service_handle_t cvi_service_handle = NULL;
 
 	if(CVI_TDL_CreateHandle2(&cvi_handle,1,0)) goto CLEANUP_SYSTEM;
 	if(CVI_TDL_SetVpssTimeout(cvi_handle, 1000)) goto CLEANUP_SYSTEM;
 	if(CVI_TDL_SetVBPool(cvi_handle, 0, 2)) goto CLEANUP_SYSTEM;
-	if(CVI_TDL_Service_CreateHandle(&cvi_service_handle, cvi_handle)) goto CLEANUP_SYSTEM2;
-	if(CVI_TDL_OpenModel(cvi_handle,fd_model_id,fd_model_path)) goto CLEANUP_SYSTEM2;
+	if(CVI_TDL_OpenModel(cvi_handle,fd_model_id,fd_model_path)) goto CLEANUP_SYSTEM;
 
 	VIDEO_FRAME_INFO_S Frame;
 	VIDEO_FRAME_INFO_S *Dst_Frame;
@@ -90,8 +88,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-CLEANUP_SYSTEM2:
-  CVI_TDL_Service_DestroyHandle(cvi_service_handle);
+
 CLEANUP_SYSTEM:
   CVI_VPSS_ReleaseChnFrame(0, 0, &Frame); 
   CVI_TDL_Free(&Facedata); 

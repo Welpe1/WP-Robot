@@ -1,7 +1,7 @@
 
 TARGET = main
 #cv180x(64) cv181x(256)
-CHIP ?= cv181x
+CHIP ?= cv180x
 
 MILKV_DUO = /home/welpe/Desktop/Workspace/milkv-duo
 SDK = $(MILKV_DUO)/C/sdk

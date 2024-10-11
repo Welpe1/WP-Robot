@@ -281,8 +281,6 @@ CVI_S32 SAMPLE_AUDIO_RTOS_UNIT_TEST_KERNEL_MODE(void)
 	} else
 		printf("open device (%s) SUCCESS: %d\n", devName, __LINE__);
 
-
-
 	ret = ioctl(s32AudioCoreKer, CVIAUDIO_IOCTL_SSP_UNIT_TEST, NULL);
 	if (ret != 0) {
 		printf("[Error]ioctl[%d]  CVIAUDIO_INIT_CHECK fail with %d\n",
