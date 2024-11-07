@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 #include "arch_sleep.h"
 #include "duo_mpu6050.h"
 #include "duo_reg.h"
@@ -11,9 +12,12 @@
  * 
  */
 
+struct Soft_I2C_Base i2c5;
 
 void i2c5_init(void)
 {	
+    
+
 	*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 23;       //设置为输出
 	*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 24;
 

@@ -11,6 +11,18 @@
 #define OLED_ADDR   0x3C                //not 0x78
 
 
+
+void i2c0_init(void);
+void i2c0_w_sda(uint8_t enable);
+uint8_t i2c0_r_sda(void);
+void i2c0_w_scl(uint8_t enable);
+void i2c0_start(void);
+void i2c0_stop(void);
+uint8_t i2c0_wait_ack(void);
+void i2c0_w_ack(uint8_t ack);
+void i2c0_w_byte(uint8_t byte);
+uint8_t i2c0_r_byte(uint8_t ack);
+
 uint8_t oled_w_byte(uint8_t data,uint8_t cmd_data);
 void oled_w_bytes(uint8_t *data, uint16_t len);
 void oled_set_cursor(uint8_t Page, uint8_t X);

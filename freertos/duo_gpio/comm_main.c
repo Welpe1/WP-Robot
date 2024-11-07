@@ -52,7 +52,7 @@ void main_cvirtos(void)
 {
 	printf("create cvi task\n");
 
-    gpio_irq_init(GPIOA,14);
+    gpio_irq_init(GPIOA,14,1);
 
     request_irq(GPIO0_INTR_FLAG,prvGpioISR,0,"gpio_isr",(void*)0);
     xTaskCreate(gpio_task, "check_task", 1024 * 8, NULL, 1, NULL);

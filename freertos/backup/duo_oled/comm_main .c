@@ -26,12 +26,7 @@
 #include "duo_check.h"
 
 
-// #define __DEBUG__
-#ifdef __DEBUG__
-#define debug_printf printf
-#else
-#define debug_printf(...)
-#endif
+
 
 extern const uint8_t BMP1[];
 extern const uint8_t BMP2[];
@@ -39,11 +34,9 @@ extern const uint8_t BMP3[];
 extern const uint8_t BMP4[];
 
 
-DEFINE_CVI_SPINLOCK(mailbox_lock, SPIN_MBOX);
 
 TaskHandle_t check_task_handle;
 TaskHandle_t oled_task_handle;
-TaskHandle_t imu_task_handle;
 
 
 void oled_task()
@@ -84,7 +77,7 @@ void oled_task()
 
 void check_task()
 {
-  uint32_t ret=0;
+    uint32_t ret=0;
 	while(1)
 	{
 		printf("check_task running\r\n");
@@ -93,43 +86,21 @@ void check_task()
 		  printf("soft i2c0 get ready\r\n");
 		  oled_init();
 		  xTaskCreate(oled_task, "oled_task", 1024 * 8, NULL, 1, NULL);
-		  vTaskDelete(check_task_handle);
+		  vTaskDelete(NULL);
 		  
 		}
-		vTaskDelay(1);
+		vTaskDelay(50);
 
 	}
 
 }
 
-void imu_task()
-{
-	uint8_t data=0;
-	struct mpu_data mpu;
 
-	while(1) 
-	{
-		mpu6050_get_data(&mpu);
-		printf("dataz=%d\r\n",mpu.accz);
-		printf("id=%d\r\n",mpu6050_get_id());
-
-		data++;
-		
-
-	}
-
-
-}
 
 void main_cvirtos(void)
 {
 	
-
 	xTaskCreate(check_task, "check_task", 1024 * 8, NULL, 1, NULL);
-    //xTaskCreate(imu_task, "imu_task", 1024 * 8, NULL, 1, NULL);
-
-
 	vTaskStartScheduler();
-
 	while(1);
-	}
+}

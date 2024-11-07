@@ -5,7 +5,110 @@
 #include "duo_soft_i2c.h"
 
 uint8_t oled_disbuf[8][128];    //OLED显存数组
-struct Soft_I2C_Base i2c0;
+
+void i2c0_init(void)
+{	
+
+	gpio_w_pin(GPIOA,29,0);
+	gpio_w_pin(GPIOA,28,0);
+}
+
+void i2c0_w_sda(uint8_t enable)
+{
+	gpio_w_pin(GPIOA,29,enable);
+	arch_nsleep(10);
+}
+
+uint8_t i2c0_r_sda(void)
+{
+    return gpio_r_pin(GPIOA,29);  
+}
+
+void i2c0_w_scl(uint8_t enable)
+{
+	gpio_w_pin(GPIOA,28,enable);
+	arch_nsleep(10);
+}
+
+void i2c0_start(void)
+{
+	i2c0_w_sda(1);
+	i2c0_w_scl(1);
+	i2c0_w_sda(0);
+	i2c0_w_scl(0);
+
+}
+
+void i2c0_stop(void)
+{
+	i2c0_w_sda(0);
+	i2c0_w_scl(1);
+	i2c0_w_sda(1);
+
+}
+
+
+uint8_t i2c0_wait_ack(void)
+{
+	uint8_t errtime=0;
+	i2c0_w_sda(1);
+	i2c0_w_scl(1);
+	while(i2c0_r_sda())
+	{
+		errtime++;
+		if(errtime>50)
+		{
+			i2c0_stop();
+			return 1;	//无应答
+		}
+	}
+	i2c0_w_scl(0);
+	return 0;	//有应答
+}
+
+void i2c0_w_ack(uint8_t ack)
+{
+	i2c0_w_scl(0);
+	if(ack) i2c0_w_sda(0);
+	else i2c0_w_sda(1);
+	i2c0_w_scl(1);
+	i2c0_w_scl(0);
+
+}
+
+void i2c0_w_byte(uint8_t byte)
+{
+	uint8_t i=0;
+	for(i=0;i<8;i++)
+	{
+		i2c0_w_sda(!!(byte & (0x80>>i)));
+		i2c0_w_scl(1);
+		i2c0_w_scl(0);
+
+	}
+	
+	i2c0_wait_ack();
+
+	// i2c0_w_scl(1);	//额外的一个时钟，不处理应答信号
+	// i2c0_w_scl(0);
+
+}
+
+uint8_t i2c0_r_byte(uint8_t ack)
+{
+	uint8_t i=0,ret=0;
+	for(i=0;i<8;i++)
+	{
+		ret<<=1;
+		i2c0_w_scl(1);
+		if(i2c0_r_sda()) ret++;
+		i2c0_w_scl(0);
+
+	}
+	i2c0_w_ack(ack);
+	return ret;
+}
+
 
 uint8_t oled_w_byte(uint8_t data,uint8_t cmd_data)
 {
@@ -14,11 +117,11 @@ uint8_t oled_w_byte(uint8_t data,uint8_t cmd_data)
 
 #if USE_SOFT
 
-    i2c_start(&i2c0);
-    i2c_w_byte(&i2c0,0x78);
-	i2c_w_byte(&i2c0,reg_addr);
-	i2c_w_byte(&i2c0,data);
-	i2c_stop(&i2c0);
+	i2c0_start();
+	i2c0_w_byte(0x78);
+	i2c0_w_byte(reg_addr);
+	i2c0_w_byte(data);
+	i2c0_stop();
 
 #else
 
@@ -42,14 +145,14 @@ void oled_w_bytes(uint8_t *data, uint16_t len)
 
 #if USE_SOFT
 	uint16_t i=0;
-	i2c_start(&i2c0);
-	i2c_w_byte(&i2c0,0x78);
-	i2c_w_byte(&i2c0,0x40);
+	i2c0_start();
+	i2c0_w_byte(0x78);
+	i2c0_w_byte(0x40);
 	for(i=0;i<len;i++)
 	{
-		i2c_w_byte(&i2c0,data[i]);
+		i2c0_w_byte(data[i]);
 	}
-	i2c_stop(&i2c0);
+	i2c0_stop();
 
 
 #else
@@ -291,10 +394,7 @@ void oled_init(void)
 {
 
 #if USE_SOFT
-	i2c0.id=0;
-    i2c0.GPIOx=GPIOA;
-    i2c0.sda=29;
-    i2c0.scl=28;
+	i2c0_init();
 #else
 	hal_i2c_init(OLED_I2C);
 #endif

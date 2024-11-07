@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include "cvi_tdl.h"
 
 #define TRY_IF_FAILED(func, result, count)                           \  
    do {                                                              \  
@@ -76,6 +77,7 @@ enum SYS_CMD_ID {
 #define IMAGE_HEIGHT    720
 
 
+uint8_t face_filter(cvtdl_face_t *stFaceMeta);
 uint8_t read_bit(uint8_t value,uint8_t position);
 uint8_t count_bit(uint16_t data);
 

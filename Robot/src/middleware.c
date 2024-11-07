@@ -22,13 +22,20 @@ int MiddleWare_Init(SAMPLE_TDL_MW_CONTEXT *stMWContext)
     return -1;
   }
 
-  //获取图像尺寸
+  /**
+   * 获取图像尺寸
+   * 经测量
+   * w=1920
+   * h=1080
+   */
   SIZE_S stSensorSize;
   ret = SAMPLE_COMM_SYS_GetPicSize(enPicSize, &stSensorSize);
   if (ret != CVI_SUCCESS) {
     printf("Cannot get senor size\n");
     return -1;
   }
+
+
 
   //设置编码器图像尺寸
   // SIZE_S stVencSize = {
@@ -45,8 +52,8 @@ int MiddleWare_Init(SAMPLE_TDL_MW_CONTEXT *stMWContext)
 
   // VBPool 0 for VPSS Grp0 Chn0
   stMWConfig.stVBPoolConfig.astVBPoolSetup[0].enFormat = VI_PIXEL_FORMAT;
-  //stMWConfig.stVBPoolConfig.astVBPoolSetup[0].u32BlkCount = 2;
-  stMWConfig.stVBPoolConfig.astVBPoolSetup[0].u32BlkCount = 3;
+  stMWConfig.stVBPoolConfig.astVBPoolSetup[0].u32BlkCount = 2;
+  //stMWConfig.stVBPoolConfig.astVBPoolSetup[0].u32BlkCount = 3;
   stMWConfig.stVBPoolConfig.astVBPoolSetup[0].u32Height = stSensorSize.u32Height;
   stMWConfig.stVBPoolConfig.astVBPoolSetup[0].u32Width = stSensorSize.u32Width;
   stMWConfig.stVBPoolConfig.astVBPoolSetup[0].bBind = true;
@@ -55,8 +62,8 @@ int MiddleWare_Init(SAMPLE_TDL_MW_CONTEXT *stMWContext)
 
   // VBPool 1 for VPSS Grp0 Chn1
   stMWConfig.stVBPoolConfig.astVBPoolSetup[1].enFormat = VI_PIXEL_FORMAT;
-  // stMWConfig.stVBPoolConfig.astVBPoolSetup[1].u32BlkCount = 2;
-  stMWConfig.stVBPoolConfig.astVBPoolSetup[1].u32BlkCount = 3;
+  stMWConfig.stVBPoolConfig.astVBPoolSetup[1].u32BlkCount = 2;
+  //stMWConfig.stVBPoolConfig.astVBPoolSetup[1].u32BlkCount = 3;
   stMWConfig.stVBPoolConfig.astVBPoolSetup[1].u32Height = stVencSize.u32Height;
   stMWConfig.stVBPoolConfig.astVBPoolSetup[1].u32Width = stVencSize.u32Width;
   stMWConfig.stVBPoolConfig.astVBPoolSetup[1].bBind = true;
@@ -98,7 +105,7 @@ int MiddleWare_Init(SAMPLE_TDL_MW_CONTEXT *stMWContext)
   stMWConfig.stVencConfig.u32FrameHeight = stVencSize.u32Height;
 
   // Get default RTSP configurations
-  SAMPLE_TDL_Get_RTSP_Config(&stMWConfig.stRTSPConfig.stRTSPConfig);
+//   SAMPLE_TDL_Get_RTSP_Config(&stMWConfig.stRTSPConfig.stRTSPConfig);
 
   ret = SAMPLE_TDL_Init_WM(&stMWConfig, stMWContext);    //初始化Middleware
   if (ret != CVI_SUCCESS) {

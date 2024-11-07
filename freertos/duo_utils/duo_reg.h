@@ -3,6 +3,7 @@
 
 #include "top_reg.h"
 
+
 #define GPIOA_BASE          0x03020000  //GPIOA基地址，gpiochip0
 #define GPIOB_BASE          0x03021000  //gpiochip1
 #define GPIOC_BASE          0x03022000  //gpiochip2
@@ -54,6 +55,14 @@
 #define UART_MCRVAL         (UART_MCR_DTR | UART_MCR_RTS) /* RTS/DTR */
 #define UART_FCR_DEFVAL     (UART_FCR_FIFO_EN | UART_FCR_RXSR | UART_FCR_TXSR)
 #define UART_LCR_8N1        0x03
+
+
+
+#define PWM0_BASE           0x03060000
+#define PWM1_BASE           0x03061000
+#define PWM2_BASE           0x03062000
+#define PWM3_BASE           0x03063000
+
 
 
 #define PINMUX_BASE         0x03001000

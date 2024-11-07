@@ -3,16 +3,6 @@
 #include "oledfont.h"
 
 
-//#define __DEBUG__
-#ifdef __DEBUG__
-#define debug_printf printf
-#else
-#define debug_printf(...)
-#endif
-
-
-int16_t mood_pr_end[MAX_MOOD_TYPES]={0,299,799,899,949,999};
-
 void happy_increase(struct Mood_Info *stMood_Info)
 {
     /**
@@ -92,52 +82,18 @@ void angry_increase(struct Mood_Info *stMood_Info)
 
 }
 
-void mood_increase(struct Mood_Info *stMood_Info,uint8_t mood)
-{
-    switch(mood)
-    {
-        case HAPPY:
-        {
-            happy_increase(stMood_Info);
-            break;
-        }
-        case PEACE:
-        {
-            peace_increase(stMood_Info);
-            break;
-        }
-        case SAD:
-        {
-            sad_increase(stMood_Info);
-            break;
-        }
-        case FEAR:
-        {
-            fear_increase(stMood_Info);
-            break;
-        }
-        case ANGRY:
-        {
-            angry_increase(stMood_Info);
-            break;
-        }
-    }
-
-}
-
 
 /**
- * 根据上一时刻的状态与当前随机数决定下一时刻的状态
- * 
- * */
+     * 根据上一时刻的状态与当前随机数决定下一时刻的状态
+     * 
+     * */
 void mood_rand_convert(struct Mood_Info *stMood_Info)
 {
-
 
     uint16_t random = rand() % 1000;
     uint16_t p_num=stMood_Info->pr_pointer[SAD]-stMood_Info->pr_pointer[HAPPY];       //积极情绪数 happy+peace
     uint16_t n_num=stMood_Info->pr_pointer[SPECIAL]-stMood_Info->pr_pointer[SAD];         //消极情绪数 sad+fear+angry
-    uint16_t n_random=p_num+rand()%n_num;
+    uint16_t n_random= p_num+rand()%n_num;
     uint8_t mood_temp=0;
 
     switch (stMood_Info->last_state)
@@ -162,8 +118,7 @@ void mood_rand_convert(struct Mood_Info *stMood_Info)
              * 按各情绪占比转换
              * 
              */
-
-            for(mood_temp=0;mood_temp<MAX_MOOD_TYPES-1;mood_temp++)//0~4
+            for(mood_temp=0;mood_temp<MAX_MOOD_TYPES-1;mood_temp++)
             {
                 if(random >= stMood_Info->pr_pointer[mood_temp] && random <=stMood_Info->pr_pointer[mood_temp+1])
                 break;
@@ -182,10 +137,9 @@ void mood_rand_convert(struct Mood_Info *stMood_Info)
              * 转换为angry的概率为  2/3 * (angry/(sad+angry+fear))
              * 
              */
-
             if(n_random % 3 >= 1)
             {
-                for(mood_temp=2;mood_temp<MAX_MOOD_TYPES-1;mood_temp++)     //2 3 4 
+                for(mood_temp=2;mood_temp<MAX_MOOD_TYPES-1;mood_temp++)
                 {
                     if(n_random >= stMood_Info->pr_pointer[mood_temp] && n_random <=stMood_Info->pr_pointer[mood_temp+1])
                     break;
@@ -209,7 +163,6 @@ void mood_rand_convert(struct Mood_Info *stMood_Info)
              * 转换为fear的概率为   fear/(sad+angry+fear)
              * 
              */
-
 
             for(mood_temp=2;mood_temp<MAX_MOOD_TYPES-1;mood_temp++)
             {
@@ -251,6 +204,25 @@ void mood_rand_convert(struct Mood_Info *stMood_Info)
     }
 
 
+
+    /**
+     * 决定下一帧是动态表情(1/3)还是静态表情(2/3)
+     */
+    if(random % 3 < 2){   //静态
+    printf("随机决定下一帧是静态表情\r\n");
+        stMood_Info->stEMO_Info.state = STATIC;
+        stMood_Info->stEMO_Info.static_select = rand() % 10;    //0~9
+        stMood_Info->stEMO_Info.select_pointer=emo_static_group[stMood_Info->state][stMood_Info->stEMO_Info.static_select]; 
+
+    }else{  //动态
+        printf("随机决定下一帧是动态表情\r\n");
+        stMood_Info->stEMO_Info.state = DYNAMICS;
+        stMood_Info->stEMO_Info.dynamics_select = rand() % 5;    //0~4
+        stMood_Info->stEMO_Info.dynamics_count=emo_dynamics_group[stMood_Info->state][stMood_Info->stEMO_Info.dynamics_select][0];
+        printf("动态随机选择器=%d\r\n",stMood_Info->stEMO_Info.dynamics_select);
+        printf("动态表情计数器=%d\r\n",stMood_Info->stEMO_Info.dynamics_count);
+    }
+
 }
 
 void mood_pr_limit(struct Mood_Info *stMood_Info)
@@ -272,139 +244,96 @@ void mood_pr_limit(struct Mood_Info *stMood_Info)
  * 如果有事件触发则事件优先级最高，处理完毕后事件触发清0
  * 当事件触发后，情绪会改变(mood++)
  */
-void mood_update(struct Mood_Info *stMood_Info)
+void mood_update(struct Mood_Operation *stMood_Operation,struct Mood_Info *stMood_Info)
 {
-    //记录上一时刻的状态
-    stMood_Info->last_state=stMood_Info->state;   
+
+    
+    stMood_Info->last_state=stMood_Info->state;   //记录上一时刻的情绪状态
+  
     stMood_Info->stEMO_Info.last_state=stMood_Info->stEMO_Info.state;
+ 
+    if(stMood_Info->stEMO_Info.last_state ==0)
+    {
+        printf("上一时刻表情状态=静态\r\n");
+    }
+    
+    else
+    {
+        printf("上一时刻表情状态=动态\r\n");
+    }
+
 
     if(stMood_Info->stEMO_Info.last_state == STATIC || stMood_Info->event_trigger){
         if(stMood_Info->event_trigger){//有事件触发
-			 debug_printf("有事件触发\r\n");
             stMood_Info->state = SPECIAL;
             for(uint8_t i=0;i<64;i++){
                 if(read_bit(stMood_Info->event_trigger,i)){
                     if(i<48){
                         //对应mood++
-						 debug_printf("触发的事件是=%d\r\n",i);
-                        mood_increase(stMood_Info,(uint8_t)(i/8));
-                        
+                        stMood_Operation->mood_increase[i/8](stMood_Info);
                     }
+                    //切换到对应的表情
                     stMood_Info->stEMO_Info.select_pointer=emo_static_group[i/8][i%8];
                 }
+
             }
-            mood_pr_limit(stMood_Info);
+           stMood_Operation->mood_pr_limit(stMood_Info);
             for(int i=0;i<MAX_MOOD_TYPES-1;i++){
                 stMood_Info->pr[i]=(float)(stMood_Info->pr_pointer[i+1]-stMood_Info->pr_pointer[i])/(MAX_PR_NUM+1);
             }
             stMood_Info->event_trigger=0;
         }else{//上一帧是静态表情
-            debug_printf("上一时刻是静态且无事件触发\r\n");
-            mood_rand_convert(stMood_Info); 
-            if(rand() % 3 < 1){   //静态
-            //随机决定下一帧是静态表情
-                 debug_printf("随机决定下一帧是静态表情\r\n");
-
-                 switch(stMood_Info->state)
-    {
-
-        case HAPPY:
-        {
-		     debug_printf("当前状态是happy\r\n");
-            break;
-        };
-        case PEACE:
-        {
-             debug_printf("当前状态是peace\r\n");
-            break;
-        };
-        case SAD:
-        {
-             debug_printf("当前状态是sad\r\n");
-            break;
-        };
-        case FEAR:
-        {
-             debug_printf("当前状态是fear\r\n");
-            break;
-        }
-        case ANGRY:
-        {
-             debug_printf("当前状态是angry\r\n");
-            break;
-        };
-        case SPECIAL:
-        {
-             debug_printf("当前状态是special\r\n");
-            break;
-        };
-        
-    }
-
-
-    
-                stMood_Info->stEMO_Info.state = STATIC;
-                stMood_Info->stEMO_Info.static_select = rand() % EMO_STATIC_MAX;    //0~7
-                stMood_Info->stEMO_Info.select_pointer=emo_static_group[stMood_Info->state][stMood_Info->stEMO_Info.static_select]; 
-
-            }else{  //动态
-            //随机决定下一帧是动态表情
-                 debug_printf("随机决定下一帧是动态表情\r\n");
-                stMood_Info->stEMO_Info.state = DYNAMICS;
-                stMood_Info->stEMO_Info.dynamics_select = rand() % EMO_DYNAMICS_MAX;    //0~3
-                stMood_Info->stEMO_Info.dynamics_count=emo_dynamics_group[stMood_Info->state][stMood_Info->stEMO_Info.dynamics_select][0];
-            }
+            stMood_Operation->mood_rand_convert(stMood_Info);  
       
         }
     }else if(stMood_Info->stEMO_Info.last_state == DYNAMICS){  //上一帧是动态
-         debug_printf("剩余动态帧数为%d\r\n",stMood_Info->stEMO_Info.dynamics_count);
+    
+ 
+
         stMood_Info->stEMO_Info.dynamics_count--;
+        
         stMood_Info->stEMO_Info.select_pointer=emo_dynamics_group[stMood_Info->state][stMood_Info->stEMO_Info.dynamics_select][emo_dynamics_group[stMood_Info->state][stMood_Info->stEMO_Info.dynamics_select][0]-stMood_Info->stEMO_Info.dynamics_count];
+        printf("动态帧指针为%d\r\n",stMood_Info->stEMO_Info.select_pointer);
+        printf("剩余动态帧数为%d\r\n",stMood_Info->stEMO_Info.dynamics_count);
         if(stMood_Info->stEMO_Info.dynamics_count == 0)
         {
-            stMood_Info->stEMO_Info.state = STATIC;
+            stMood_Info->stEMO_Info.state = 0;
+            printf("动态帧显示完毕\r\n");
+            
         }
+
     }
 
-     debug_printf("帧指针为%d\r\n",stMood_Info->stEMO_Info.select_pointer);
-
+    printf("\r\n");
 
     
-     debug_printf("\r\n");
-
 }
 
-void mood_system_init(struct Mood_Info *stMood_Info)
+void mood_system_init(struct Mood_Operation *mood_operation,struct Mood_Info *stMood_Info)
 {
 
-    for(int i=0;i<MAX_MOOD_TYPES;i++)   //0~6  
+    for(int i=0;i<MAX_MOOD_TYPES;i++)   //0~5  
 	{
-
-        /**
-         * 0        1       2       3       4       5
-         * 0        299     799     899     949     999
-         * happy    peace   sad     fear    angry   special
-         * 
-         * stMood_Info->pr_pointer[HAPPY]永远等于0
-         * stMood_Info->pr_pointer[SPECIAL]永远等于999
-         */
-
+        strcpy(stMood_Info->name[i], mood_types[i]); 
         stMood_Info->pr_pointer[i]= mood_pr_end[i];
         if(i > 0) stMood_Info->pr[i-1]=(float)(stMood_Info->pr_pointer[i]-stMood_Info->pr_pointer[i-1])/(MAX_PR_NUM+1);
+        
 	}
+
+    mood_operation->mood_increase[0]=happy_increase;
+    mood_operation->mood_increase[1]=peace_increase;
+    mood_operation->mood_increase[2]=sad_increase;
+    mood_operation->mood_increase[3]=fear_increase;
+    mood_operation->mood_increase[4]=angry_increase;
+    mood_operation->mood_update=mood_update;
+    mood_operation->mood_rand_convert=mood_rand_convert;
+    mood_operation->mood_pr_limit=mood_pr_limit;
+
     stMood_Info->state = PEACE;
     stMood_Info->last_state = PEACE;
-    stMood_Info->stEMO_Info.state = STATIC;
-    stMood_Info->stEMO_Info.last_state = STATIC;
+    stMood_Info->stEMO_Info.last_state == STATIC;
+
 
 }
-
-
-
-
-
-
-
-
 
 

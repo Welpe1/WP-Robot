@@ -4,7 +4,7 @@
 #include "duo_reg.h"
 #include <stdint.h>
 
-struct gpio_regs
+struct GPIO_REGS
 {
     volatile uint32_t dr;   /*0x00 Port A data register*/
     volatile uint32_t ddr;  /*0x04 Port A data direction register*/
@@ -22,15 +22,17 @@ struct gpio_regs
     volatile uint32_t lsr;  /*0x60*/
 };
 
-#define GPIOA   ((struct gpio_regs*)GPIOA_BASE)
-#define GPIOB   ((struct gpio_regs*)GPIOB_BASE)
-#define GPIOC   ((struct gpio_regs*)GPIOC_BASE)
-#define GPIOD   ((struct gpio_regs*)GPIOD_BASE)
 
 
-void gpio_w_pin(struct gpio_regs *GPIOx,uint8_t pin,uint8_t bit);
-uint8_t gpio_r_pin(struct gpio_regs *GPIOx,uint8_t pin);
-void gpio_irq_init(struct gpio_regs *GPIOx,uint8_t pin);
-void gpio_clear_it(struct gpio_regs *GPIOx);
+#define GPIOA   ((struct GPIO_REGS*)GPIOA_BASE)
+#define GPIOB   ((struct GPIO_REGS*)GPIOB_BASE)
+#define GPIOC   ((struct GPIO_REGS*)GPIOC_BASE)
+#define GPIOD   ((struct GPIO_REGS*)GPIOD_BASE)
+
+
+void gpio_w_pin(struct GPIO_REGS *GPIOx,uint8_t pin,uint8_t bit);
+uint8_t gpio_r_pin(struct GPIO_REGS *GPIOx,uint8_t pin);
+void gpio_irq_init(struct GPIO_REGS *GPIOx,uint8_t pin,uint8_t mode);
+void gpio_clear_it(struct GPIO_REGS *GPIOx);
 
 #endif

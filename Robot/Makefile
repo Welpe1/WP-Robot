@@ -1,21 +1,21 @@
 
 TARGET = main
 #cv180x(64) cv181x(256)
-CHIP ?= cv180x
+CHIP ?= cv181x
 
 MILKV_DUO = /home/welpe/Desktop/Workspace/milkv-duo
-SDK = $(MILKV_DUO)/C/sdk
-APP = $(MILKV_DUO)/C/app
-HOST_TOOLS = $(SDK)/duo-buildroot-sdk/host-tools
-SYSROOT = $(SDK)/rootfs
+APP = $(MILKV_DUO)/app
+DUO_BUILDROOT_SDK=$(MILKV_DUO)/duo-buildroot-sdk
+HOST_TOOLS = $(DUO_BUILDROOT_SDK)/host-tools
+SYSROOT = $(MILKV_DUO)/rootfs
 ROBOT = $(APP)/Robot
 
 ifeq ($(CHIP),cv180x)
 	USE_TPU_IVE=ON
-    CVI_TDL_SDK=${SDK}/cvitek-tdl-sdk-cv180x
+    CVI_TDL_SDK=${MILKV_DUO}/cvitek-tdl-sdk-cv180x
 else ifeq ($(CHIP), cv181x)  
 	USE_TPU_IVE=OFF
-    CVI_TDL_SDK=${SDK}/cvitek-tdl-sdk-sg200x
+    CVI_TDL_SDK=${MILKV_DUO}/cvitek-tdl-sdk-sg200x
 endif
 
 MW_PATH=$(CVI_TDL_SDK)/sample/3rd/middleware/v2
