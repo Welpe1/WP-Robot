@@ -68,6 +68,7 @@
 #define PINMUX_BASE         0x03001000
 #define PINMUX_GP0          0x4C
 #define PINMUX_GP1          0x50
+#define PINMUX_GP2          0x84
 #define PINMUX_GP16         0x3C
 #define PINMUX_GP17         0x40
 

@@ -1,181 +1,64 @@
 #include <stdio.h>
 #include <stdint.h>
-#include "arch_sleep.h"
 #include "duo_mpu6050.h"
-#include "duo_reg.h"
+#include "duo_soft_i2c.h"
+#include "hal_dw_i2c.h"
 
 /**
  * 使用软件i2c
  * 自定义i2c5
- * sda gpa23
- * scl gpa24
+ * sda gpa14
+ * scl gpa15
  * 
  */
 
 struct Soft_I2C_Base i2c5;
+const float RtD = 57.2957795f;
+const float DtR = 0.0174532925f;
+const float Gyro_G = 0.06103512f;
+const float Gyro_Gr = 0.0010632f;
 
-void i2c5_init(void)
-{	
-    
-
-	*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 23;       //设置为输出
-	*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 24;
-
-}
-
-void i2c5_w_sda(uint8_t enable)
-{
-	*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 23;       //设置为输出
-	if (enable) {
-		*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DR) |= 1 << 23;
-	} else {
-		*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DR) &=~(1 << 23);
-	}
-	
-	arch_usleep(10);
-}
-
-uint8_t i2c5_r_sda(void)
-{
-    *(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) &= ~(1 << 24);  
-    uint32_t ret = *(uint32_t*)(GPIOA_BASE | GPIO_EXT_PORTA); 
-    
-    arch_usleep(10);
-    *(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 24;
-     
-    return (ret >> 24) & 1;   
-    
-
-}
-
-void i2c5_w_scl(uint8_t enable)
-{
-	*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DDR) |= 1 << 23;
-
-	if (enable) {
-		*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DR) |= 1 << 23;
-	} else {
-		*(uint32_t*)(GPIOA_BASE | GPIO_SWPORTA_DR) &=~(1 << 23);
-	}
-	
-	arch_usleep(10);
-}
-
-void i2c5_start(void)
-{
-	i2c5_w_sda(1);
-	i2c5_w_scl(1);
-	i2c5_w_sda(0);
-	i2c5_w_scl(0);
-
-}
-
-void i2c5_stop(void)
-{
-	i2c5_w_sda(0);
-	i2c5_w_scl(1);
-	i2c5_w_sda(1);
-
-}
-
-
-uint8_t i2c5_wait_ack(void)
-{
-	uint8_t errtime=0;
-	i2c5_w_sda(1);
-	i2c5_w_scl(1);
-	while(i2c5_r_sda())
-	{
-		errtime++;
-		if(errtime>50)
-		{
-			i2c5_stop();
-			return 1;	//无应答
-		}
-	}
-	i2c5_w_scl(0);
-	return 0;	//有应答
-}
-
-void i2c5_w_ack(uint8_t ack)
-{
-	i2c5_w_scl(0);
-	if(ack) i2c5_w_sda(0);
-	else i2c5_w_sda(1);
-	i2c5_w_scl(1);
-	i2c5_w_scl(0);
-
-}
-
-void i2c5_w_byte(uint8_t byte)
-{
-	uint8_t i=0;
-	for(i=0;i<8;i++)
-	{
-		i2c5_w_sda(!!(byte & (0x80>>i)));
-		i2c5_w_scl(1);
-		i2c5_w_scl(0);
-
-	}
-
-}
-
-uint8_t i2c5_r_byte(uint8_t ack)
-{
-	uint8_t i=0,ret=0;
-    i2c5_w_sda(1);
-	for(i=0;i<8;i++)
-	{
-		i2c5_w_scl(1);
-		if(i2c5_r_sda()) {ret|=(0x80>>i);}
-		i2c5_w_scl(0);
-
-	}
-    i2c5_w_ack(ack);
-	return ret;
-}
+struct Quaternion QNum = {1, 0, 0, 0};
+volatile struct A_Temp GyroIntegError = {0};
+volatile struct A_Temp Gravity, Acc, Gyro, AccGravity;
 
 uint8_t mpu6050_w_byte(uint8_t reg,uint8_t data)
 {
-	i2c5_start();
-    i2c5_w_byte(MPU6050_ADDR);
-    i2c5_wait_ack();
-    i2c5_w_byte(reg);
-    i2c5_wait_ack();
-    i2c5_w_byte(data);
-    i2c5_wait_ack();
-    i2c5_stop();
-
+    i2c_start(&i2c5);
+    i2c_w_byte(&i2c5,MPU6050_ADDR);
+    i2c_w_byte(&i2c5,reg);
+    i2c_w_byte(&i2c5,data);
+	i2c_stop(&i2c5);
 }
 
 uint8_t mpu6050_r_byte(uint8_t reg)
 {
-	uint8_t data;
-    i2c5_start();
-    i2c5_w_byte(MPU6050_ADDR);
-    i2c5_wait_ack();
-    i2c5_w_byte(reg);
-    i2c5_wait_ack();
-
-    i2c5_start();
-    i2c5_w_byte(MPU6050_ADDR|0x01);
-    i2c5_wait_ack();
-    data=i2c5_r_byte(1);
-    i2c5_stop();
-
+    uint8_t data=0;
+    i2c_start(&i2c5);
+    i2c_w_byte(&i2c5,MPU6050_ADDR);
+    i2c_w_byte(&i2c5,reg);
+    i2c_start(&i2c5);
+    i2c_w_byte(&i2c5,MPU6050_ADDR|0x01);
+    data=i2c_r_byte(&i2c5,1);
+	i2c_stop(&i2c5);
+    return data;
 }
 
 
 
 void mpu6050_init(void)
 {
-	mpu6050_w_byte(MPU6050_PWR_MGMT_1, 0x01);
+    i2c5.id=0;
+    i2c5.GPIOx=GPIOA;
+    i2c5.sda=14;
+    i2c5.scl=15;
+
+    mpu6050_w_byte(MPU6050_PWR_MGMT_1, 0x01);
 	mpu6050_w_byte(MPU6050_PWR_MGMT_2, 0x00);
 	mpu6050_w_byte(MPU6050_SMPLRT_DIV, 0x09);
 	mpu6050_w_byte(MPU6050_CONFIG, 0x06);
 	mpu6050_w_byte(MPU6050_GYRO_CONFIG, 0x18);
 	mpu6050_w_byte(MPU6050_ACCEL_CONFIG, 0x18);
-
 }
 
 uint8_t mpu6050_get_id(void)
@@ -194,26 +77,72 @@ void mpu6050_get_data(struct mpu_data *mpu)
 }
 
 
-const float RtD = 57.2957795f;
-const float DtR = 0.0174532925f;
-const float Gyro_G = 0.06103512f;
-const float Gyro_Gr = 0.0010632f;
 
-float Q_rsqrt( float number )
+float Q_rsqrt(float number)
 {
     long i;
     float x2, y;
     const float threehalfs = 1.5F;
- 
     x2 = number * 0.5F;
     y = number;
     i = * ( long * ) &y;
     i = 0x5f3759df - ( i >> 1 );
     y = * ( float * ) &i;
-    y = y * ( threehalfs - ( x2 * y * y ) );//1st iteration （第一次牛顿迭代）
-
- 
+    y = y * ( threehalfs - ( x2 * y * y ) );
     return y;
 }
 
 
+void GetAngle(struct mpu_data *Imu,float dt)
+{    
+    static  float KpDef = 0.5f ;
+    static  float KiDef = 0.0001f;
+    Gravity.x = 2*(QNum.q1 * QNum.q3 - QNum.q0 * QNum.q2);                                
+    Gravity.y = 2*(QNum.q0 * QNum.q1 + QNum.q2 * QNum.q3);                          
+    Gravity.z = 1-2*(QNum.q1 * QNum.q1 + QNum.q2 * QNum.q2);
+    
+    float NormAcc=Q_rsqrt(SQUA(Imu->accx)+ SQUA(Imu->accy) +SQUA(Imu->accz));
+    Acc.x = Imu->accx * NormAcc;
+    Acc.y = Imu->accy * NormAcc;
+    Acc.z = Imu->accz * NormAcc;
+    
+    AccGravity.x = Acc.y * Gravity.z - Acc.z * Gravity.y;
+    AccGravity.y = Acc.z * Gravity.x - Acc.x * Gravity.z;
+    AccGravity.z = Acc.x * Gravity.y - Acc.y * Gravity.x;
+    
+    //加速度积分补偿角速度的补偿值
+    GyroIntegError.x += AccGravity.x * KiDef;
+    GyroIntegError.y += AccGravity.y * KiDef;
+    GyroIntegError.z += AccGravity.z * KiDef;
+
+    Gyro.x = Imu->gyrox * Gyro_Gr + KpDef * AccGravity.x  +  GyroIntegError.x;
+    Gyro.y = Imu->gyroy * Gyro_Gr + KpDef * AccGravity.y  +  GyroIntegError.y;
+    Gyro.z = Imu->gyroz * Gyro_Gr + KpDef * AccGravity.z  +  GyroIntegError.z;
+    
+    float q0_t, q1_t, q2_t, q3_t;
+    q0_t = dt * (-QNum.q1 * Gyro.x - QNum.q2 * Gyro.y - QNum.q3 * Gyro.z) * 0.5f;
+    q1_t = dt * (QNum.q0 * Gyro.x - QNum.q3 * Gyro.y + QNum.q2 * Gyro.z) * 0.5f;
+    q2_t = dt * (QNum.q3 * Gyro.x + QNum.q0 * Gyro.y - QNum.q1 * Gyro.z) * 0.5f;
+    q3_t = dt * (-QNum.q2 * Gyro.x + QNum.q1 * Gyro.y + QNum.q0 * Gyro.z) * 0.5f;
+    
+    QNum.q0 += q0_t;
+    QNum.q1 += q1_t;
+    QNum.q2 += q2_t;
+    QNum.q3 += q3_t;
+
+    float NormQ=Q_rsqrt(SQUA(QNum.q0) + SQUA(QNum.q1) + SQUA(QNum.q2) + SQUA(QNum.q3));
+    QNum.q0 *= NormQ;
+    QNum.q1 *= NormQ;
+    QNum.q2 *= NormQ;
+    QNum.q3 *= NormQ;
+        
+    float yaw_G = Imu->gyroz * Gyro_G;
+    if((yaw_G > 1.2f) || (yaw_G < -1.2f))
+    {
+        Imu->angle.yaw  += yaw_G * dt;            
+    }
+        
+    Imu->angle.pitch = asin(2 * QNum.q0 * QNum.q2 - 2 * QNum.q1 * QNum.q3) * RtD;
+    Imu->angle.roll = atan2(2 * QNum.q2 * QNum.q3 + 2 * QNum.q0 * QNum.q1, 1 - 2 * QNum.q1 *QNum.q1 - 2 * QNum.q2 * QNum.q2) * RtD;
+
+}

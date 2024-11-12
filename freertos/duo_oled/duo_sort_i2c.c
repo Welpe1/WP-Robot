@@ -5,7 +5,7 @@
 void sda_w(struct Soft_I2C_Base *i2c,uint8_t bit)
 {
     gpio_w_pin(i2c->GPIOx,i2c->sda,bit);
-	arch_nsleep(10);
+	arch_nsleep(20);
 
 }
 
@@ -13,7 +13,7 @@ void scl_w(struct Soft_I2C_Base *i2c,uint8_t bit)
 {
 
     gpio_w_pin(i2c->GPIOx,i2c->scl,bit);
-	arch_nsleep(10);
+	arch_nsleep(20);
 
 }
 
@@ -41,6 +41,7 @@ void i2c_stop(struct Soft_I2C_Base *i2c)
 }
 
 
+//0表示应答，1表示非应答
 uint8_t i2c_wait_ack(struct Soft_I2C_Base *i2c)
 {
 	uint8_t errtime=0;
@@ -59,11 +60,12 @@ uint8_t i2c_wait_ack(struct Soft_I2C_Base *i2c)
 	return 0;	//有应答
 }
 
+
+//0表示应答，1表示非应答
 void i2c_w_ack(struct Soft_I2C_Base *i2c,uint8_t ack)
 {
 	scl_w(i2c,0);
-	if(ack) sda_w(i2c,0);
-	else sda_w(i2c,1);
+	sda_w(i2c,ack);
 	scl_w(i2c,1);
 	scl_w(i2c,0);
 
