@@ -18,6 +18,8 @@
 #include "duo_uart.h"
 #include "duo_mpu6050.h"
 #include "duo_check.h"
+#include "duo_pwm.h"
+#include "duo_gpio.h"
 
 extern const uint8_t BMP1[];
 extern const uint8_t BMP2[];
@@ -30,9 +32,11 @@ TaskHandle_t oled_task_handle;
 
 void oled_task()
 {
+    struct pwm_config PWM10;
+    pwm_init(&PWM10,10);
   while(1) 
   {
-    printf("oled_task running\r\n");
+    //printf("oled_task running\r\n");
 		
     oled_clear();
     oled_update();
@@ -58,6 +62,18 @@ void oled_task()
     oled_update();
     vTaskDelay(1);
 
+    uint16_t i=0;
+    for(i=0;i<180;i++)
+    {
+        set_angle(&PWM10,i);
+        printf("angle=%d\r\n",i);
+        
+    }
+    i=0;
+    
+
+
+
 
   }
 
@@ -71,7 +87,7 @@ void check_task()
     //iic0
     check_system_push(PINMUX_BASE + PINMUX_GP0,3);
     check_system_push(PINMUX_BASE + PINMUX_GP1,3);
-    //pwm
+    //pwm10
     check_system_push(PINMUX_BASE + PINMUX_GP2,7);
 
 	while(1)
@@ -81,6 +97,7 @@ void check_task()
 		{
             check_system_destroy();
             printf("soft i2c0 get ready\r\n");
+            
             oled_init();
             xTaskCreate(oled_task, "oled_task", 1024 * 8, NULL, 1, NULL);
             vTaskDelete(NULL);
@@ -95,14 +112,22 @@ void check_task()
 
 
 
+void prvGpioISR(void)
+{
+    gpio_clear_it(GPIOA);
+    printf("gpio isr 1111111111111111111111111111111\r\n");
 
+    printf("GPIOA->isr=%d\r\n",(GPIOA->isr>>14)&1);
+
+}
 
 
 
 
 void main_cvirtos(void)
 {
-	
+    gpio_irq_init(GPIOA,14,2);
+	request_irq(GPIO0_INTR_FLAG,prvGpioISR,0,"gpio_isr",(void*)0);
 	xTaskCreate(check_task, "check_task", 1024 * 8, NULL, 1, NULL);
 	vTaskStartScheduler();
 	while(1);

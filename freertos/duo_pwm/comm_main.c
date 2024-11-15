@@ -118,7 +118,6 @@ void mailbox_task(void)
 		switch (from_linux.cmd_id) {
 
             case CMD_TEST_B:
-				printf("111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
                 printf("cmd_test_b\r\n");
                 from_linux.cmd_id = CMD_TEST_B;
 				from_linux.resv.valid.rtos_valid = 1;

@@ -1,0 +1,85 @@
+cmake_minimum_required(VERSION 3.10)
+
+set(MILKVDUO_SDK_PATH "/home/welpe/Desktop/Workspace/milkv-duo")
+
+set(CVIMPI_SDK_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+set(CVIMPI_SRC_DIR "${CVIMPI_SDK_PATH}/src")
+set(CVIMPI_INC_DIR "${CVIMPI_SDK_PATH}/include")
+set(CVIMPI_LIB_DIR "${CVIMPI_SDK_PATH}/lib")
+set(3RDPARTY_DIR "${CVIMPI_SDK_PATH}/3rdparty")
+set(MODEL_DIR "${CVIMPI_SDK_PATH}/model")
+
+set(CMAKE_C_COMPILER "${MILKVDUO_SDK_PATH}/duo-buildroot-sdk/host-tools/gcc/riscv64-linux-musl-x86_64/bin/riscv64-unknown-linux-musl-gcc")
+set(CMAKE_CXX_COMPILER "${MILKVDUO_SDK_PATH}/duo-buildroot-sdk/host-tools/gcc/riscv64-linux-musl-x86_64/bin/riscv64-unknown-linux-musl-g++")
+set(CMAKE_C_LD "${MILKVDUO_SDK_PATH}/duo-buildroot-sdk/host-tools/gcc/riscv64-linux-musl-x86_64/bin/riscv64-unknown-linux-musl-ld")
+
+#设置链接器标志
+set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath-link,${CMAKE_CURRENT_SOURCE_DIR}/lib:/usr/lib")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -DNDEBUG -mcpu=c906fdv -march=rv64imafdcv0p7xthead -mcmodel=medany -mabi=lp64d -D_MW_V2_ -std=gnu11 -Wno-pointer-to-int-cast -fsigned-char -Wno-format-truncation -fdiagnostics-color=always -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64")
+
+project(main)
+
+#指定库文件目录
+link_directories(${CVIMPI_LIB_DIR})
+
+#执行${CVIMPI_SDK_PATH}/3rdparty/目录下的CMakeLists.txt
+add_subdirectory(${3RDPARTY_DIR}/ 3rdparty.out)
+
+if(TARGET_SOC STREQUAL "cv180x")  
+    set(USE_TPU_IVE ON)  
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCV180X -DUSE_TPU_IVE")
+elseif(TARGET_SOC STREQUAL "cv181x")  
+    set(USE_TPU_IVE OFF)  
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCV181X")
+endif()
+
+
+file(GLOB SRC_FILES "${CVIMPI_SRC_DIR}/*.c")
+set(OBJECTS ${SRC_FILES} 
+            ${CVIMPI_INC_DIR}/utils/middleware_utils.o 
+            ${CVIMPI_INC_DIR}/utils/sample_utils.o 
+            ${CVIMPI_INC_DIR}/utils/vi_vo_utils.o 
+            ) 
+add_executable(${PROJECT_NAME} ${OBJECTS})
+
+target_link_libraries(${PROJECT_NAME} 
+                    ${OpenCV_LIBS} 
+                    ${IVE_LIBS}
+                    ${MW_LIBS}
+                    ${MW_AUDIO_LIBS}
+                    ${RTSP_LIBS}
+                    ${TPU_LIBS}
+                    ${OPENCV_LIBS}
+                    pthread 
+                    atomic
+                    cvi_tdl
+                    cvi_tdl_app
+                    )
+                    
+                   
+
+target_include_directories(${PROJECT_NAME} PRIVATE                        
+                            ${OpenCV_INCLUDE_DIRS}
+                            ${IVE_INC}
+                            ${MW_INC}
+                            ${MW_LINUX_INC}
+                            ${MW_ISP_INC}
+                            ${RTSP_INC}
+                            ${STB_INC}
+                            ${TPU_INC}
+                            ${OPENVC_INC}
+                            ${CVIMPI_INC_DIR}
+                            ${CVIMPI_INC_DIR}/cvi_draw_rect
+                            ${CVIMPI_INC_DIR}/cvi_md
+                            ${CVIMPI_INC_DIR}/cvi_preprocess
+                            ${CVIMPI_INC_DIR}/cvi_tdl
+                            ${CVIMPI_INC_DIR}/cvi_tdl_app
+                            ${CVIMPI_INC_DIR}/utils
+                        )
+                        
+
+                          
+                          
+                          
+
+

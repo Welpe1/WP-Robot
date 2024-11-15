@@ -4,7 +4,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "cvi_tdl.h"
+//#include "cvi_tdl.h"
+
+
+static volatile uint8_t gVideoCapture=0x00;
+static volatile uint8_t gMailbox=0x00;
+
 
 #define TRY_IF_FAILED(func, result, count)                           \  
    do {                                                              \  
@@ -17,6 +22,12 @@
             usleep(50);                                              \
        }                                                             \  
    } while (0)
+
+
+#define LIMIT( x,min,max ) ( (x) < (min)  ? (min) : ( (x) > (max) ? (max) : (x) ) )
+#define LIMIT_MAX(x, max) ((x) > (max) ? (max) : (x))
+#define LIMIT_MIN(x, min) ((x) < (min) ? (min) : (x))
+
 
 
 #define OLED_FONT_SIZE   128*8
@@ -62,24 +73,16 @@ enum SYS_CMD_ID {
 };
 
 //Mailbox
-#define OLED_SHOW
-#define HAPPY   
-#define PEACE
-#define SAD
-#define FEAR
-#define ANGRY
-
-
-
 
 
 #define IMAGE_WIDTH     1280
 #define IMAGE_HEIGHT    720
 
 
-uint8_t face_filter(cvtdl_face_t *stFaceMeta);
-uint8_t read_bit(uint8_t value,uint8_t position);
-uint8_t count_bit(uint16_t data);
+//uint8_t face_filter(cvtdl_face_t *stFaceMeta);
+uint8_t read_bit(uint64_t value,uint8_t position);
+uint8_t count_bit(uint64_t value);
+uint16_t rand_section(uint16_t start,uint16_t end);
 
 
 #endif
