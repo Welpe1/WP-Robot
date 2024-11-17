@@ -81,6 +81,7 @@ enum SYS_CMD_ID {
 
 //uint8_t face_filter(cvtdl_face_t *stFaceMeta);
 uint8_t read_bit(uint64_t value,uint8_t position);
+void set_bit(uint64_t *value,uint8_t position,uint8_t bit);
 uint8_t count_bit(uint64_t value);
 uint16_t rand_section(uint16_t start,uint16_t end);
 

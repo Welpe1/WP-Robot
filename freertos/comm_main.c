@@ -112,11 +112,12 @@ void check_task()
 
 
 
-void prvGpioISR(void)
+void prvDetectISR(void)
 {
     gpio_clear_it(GPIOA);
-    printf("gpio isr 1111111111111111111111111111111\r\n");
+    if()
 
+    
     printf("GPIOA->isr=%d\r\n",(GPIOA->isr>>14)&1);
 
 }

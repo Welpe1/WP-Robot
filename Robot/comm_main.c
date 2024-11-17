@@ -1,14 +1,9 @@
-/* Standard includes. */
 #include <stdio.h>
-
-/* Kernel includes. */
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
 #include "mmio.h"
 #include "delay.h"
-
-/* cvitek includes. */
 #include "printf.h"
 #include "rtos_cmdqu.h"
 #include "cvi_mailbox.h"
@@ -18,7 +13,6 @@
 #include "comm.h"
 #include "cvi_spinlock.h"
 
-/* Milk-V Duo */
 #include "duo_reg.h"
 #include "duo_oled.h"
 #include "duo_uart.h"
@@ -26,20 +20,15 @@
 #include "duo_mpu6050.h"
 #include "duo_gpio.h"
 #include "duo_pwm.h"
-
 #include "arch_helpers.h"
+#include "time.h"
 
 
 DEFINE_CVI_SPINLOCK(mailbox_lock, SPIN_MBOX);
 
-
 QueueHandle_t queue_handle;
 
-void prvQueueISR(void);
-void mailbox_task(void);
-void servo_task(void);
-
-/* mailbox parameters */
+/* mailbox */
 volatile struct mailbox_set_register *mbox_reg;
 volatile struct mailbox_done_register *mbox_done_reg;
 volatile unsigned long *mailbox_context; // mailbox buffer context is 64 Bytess
@@ -48,49 +37,71 @@ volatile uint8_t *value=NULL;
 uintptr_t addr;
 uint32_t gFreertos_Data=0;
 uint32_t gLinux_Data=0;
-float offset_dead_block = 0.1;
-uint8_t kp = 50;
-uint8_t last_degree = 90;
 
-void calculate_offset(int img_width, int img_height, int face_x, int face_y, float* offset_x, float* offset_y) {  
-    *offset_x = (float)(face_x / (float)img_width - 0.5) * 2;  
-    *offset_y = (float)(face_y / (float)img_height - 0.5) * 2;  
+extern const uint8_t BMP1[];
+extern const uint8_t BMP2[];
+extern const uint8_t BMP3[];
+extern const uint8_t BMP4[];
+
+TaskHandle_t check_task_handle;
+TaskHandle_t oled_task_handle;
+
+
+
+void my_set_bit(uint64_t *value,uint8_t position,uint8_t bit)
+{
+    if(bit){
+        *value |= (1 << position);
+    }else{
+        *value &=~(1 << position);
+    }
 }
 
-uint8_t servo_control(float offset_x)
-{
-	if(abs(offset_x) < offset_dead_block)
-       offset_x = 0;
-    float delta_degree = offset_x * kp;
-    float next_degree = last_degree + delta_degree;
-    if(next_degree < 0)
-        next_degree = 0;
-    else if(next_degree > 180)
-        next_degree = 180;
-    return (int)next_degree;
-}
 
-void main_cvirtos(void)
+void oled_task()
 {
-	printf("create cvi task\n");
-	value = (uint8_t *)malloc(4 * sizeof(uint8_t));  
-	/**
-	 * 通过 request_irq 注册中断处理函数
-	 * 在 rtos_irq_handler 中通过 mailbox 机制访问读取共享内存，
-	 * 中断号 mailbox_irq 通过 platform_get_irq_byname 获取
-	 */
-	request_irq(MBOX_INT_C906_2ND, prvQueueISR, 0, "mailbox", (void *)0);
-	
-	queue_handle = xQueueCreate(30, sizeof(cmdqu_t));
-	if(queue_handle != NULL)
-	{
-		xTaskCreate(mailbox_task,"mailbox_task",configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 5,NULL);		//创建任务
-        xTaskCreate(servo_task, "servo_task", 1024 * 8, NULL, 1, NULL);
-	}
-	
-    vTaskStartScheduler();
-    printf("cvi task end\n");
-	while(1);
+    struct pwm_config PWM10;
+    pwm_init(&PWM10,10);
+    while(1) 
+    {
+    //printf("oled_task running\r\n");
+
+        oled_clear();
+        oled_update();
+        vTaskDelay(50);
+
+        oled_full();
+        oled_update();
+        vTaskDelay(50);
+
+        oled_show_image(0,0,128,64,BMP1);
+        oled_update();
+        vTaskDelay(50);
+
+        oled_show_image(0,0,128,64,BMP2);
+        oled_update();
+        vTaskDelay(50);
+
+        oled_show_image(0,0,128,64,BMP3);
+        oled_update();
+        vTaskDelay(50);
+
+        oled_show_image(0,0,128,64,BMP4);
+        oled_update();
+        vTaskDelay(50);
+
+        uint16_t i=0;
+        for(i=0;i<180;i++)
+        {
+            set_angle(&PWM10,i);
+            vTaskDelay(5);
+        }
+        i=0;
+
+
+
+
+    }
 }
 
 void mailbox_task(void)
@@ -118,7 +129,6 @@ void mailbox_task(void)
 		switch (from_linux.cmd_id) {
 
             case CMD_TEST_B:
-				printf("111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
                 printf("cmd_test_b\r\n");
                 from_linux.cmd_id = CMD_TEST_B;
 				from_linux.resv.valid.rtos_valid = 1;
@@ -189,29 +199,36 @@ send_label:
 	}
 }
 
-void servo_task(void)
+void check_task()
 {
-	uint8_t degree;
-    struct pwm_config PWM2;
-    pwm_init(&PWM2,2);
+    uint32_t ret=0;
+    check_system_init();
+    //iic0
+    check_system_push(PINMUX_BASE + PINMUX_GP0,3);
+    check_system_push(PINMUX_BASE + PINMUX_GP1,3);
+    //pwm10
+    check_system_push(PINMUX_BASE + PINMUX_GP2,7);
 
 	while(1)
 	{
-		
-		float offset_x, offset_y;  
-		uint32_t face_data=gLinux_Data>>10;
-		uint16_t face_x = face_data&0x7FF;
-		uint16_t face_y = (face_data>>11);
-		printf("face_x=%x\n",face_x);
-		printf("face_y=%x\r\n",face_y);
-		calculate_offset(1280, 720, face_x, face_y, &offset_x, &offset_y);
-		degree=servo_control(offset_x);
-		printf("degree=%d\n",degree);
-		set_angle(&PWM2,degree);
-        vTaskDelay(5);
+		printf("check_task running\r\n");
+		if(!check_system_run())
+		{
+            check_system_destroy();
+            printf("soft i2c0 get ready\r\n");
+
+            oled_init();
+            xTaskCreate(oled_task, "oled_task", 1024 * 8, NULL, 1, NULL);
+            vTaskDelete(NULL);
+		  
+		}
+		vTaskDelay(50);
 
 	}
+
 }
+
+
 
 /**
  * 用于处理来自Linux系统的mailbox中断
@@ -260,4 +277,59 @@ void prvQueueISR(void)
 	}
 }
 
+void prvDetectISR(void)
+{
+    printf("GPIOA 23 IRQ");
+    my_set_bit(&gFreertos_Data,0,1);
+    // gFreertos_Data=0x01;
+    gpio_clear_it(GPIOA);
+    
+}
 
+
+struct timeval cur_t;
+struct timeval last_t;
+// void prvTouchISR(void)
+// {
+//     printf("GPIOA 24 IRQ");
+
+//     if(cur_t.tv_sec-last_t.tv_sec>1)
+//     {
+//         gettimeofday(&cur_t, NULL);
+//         my_set_bit(&gFreertos_Data,1,1);
+
+//     }
+//     last_t=cur_t;
+
+  
+
+
+//     printf("cur_t=%d\r\n",cur_t.tv_sec);
+
+
+//     gFreertos_Data=0x01;
+//     gpio_clear_it(GPIOA);
+    
+// }
+
+
+void main_cvirtos(void)
+{
+	printf("create cvi task\n");
+	//value = (uint8_t *)malloc(4 * sizeof(uint8_t));
+    gpio_irq_init(GPIOA,23,2);
+    gpio_irq_init(GPIOA,24,2);
+
+	request_irq(MBOX_INT_C906_2ND,prvQueueISR, 0, "mailbox", (void *)0);
+    request_irq(GPIO0_INTR_FLAG,prvDetectISR,0,"gpio_isr",(void*)0);
+	queue_handle = xQueueCreate(30, sizeof(cmdqu_t));
+
+	if(queue_handle != NULL)
+	{
+		xTaskCreate(mailbox_task,"mailbox_task",configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 5,NULL);		//创建任务
+        xTaskCreate(check_task, "check_task", 1024 * 8, NULL, 1, NULL);
+	}
+	
+    vTaskStartScheduler();
+	while(1);
+}

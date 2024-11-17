@@ -113,3 +113,47 @@ void set_angle(struct pwm_config *PWMx,uint16_t angle)
 
 // } 
 
+
+void calculate_offset(int img_width, int img_height, int face_x, int face_y, float* offset_x, float* offset_y) {  
+    *offset_x = (float)(face_x / (float)img_width - 0.5) * 2;  
+    *offset_y = (float)(face_y / (float)img_height - 0.5) * 2;  
+}
+
+
+uint8_t servo_control(float offset_x)
+{
+	if(abs(offset_x) < offset_dead_block)
+       offset_x = 0;
+    float delta_degree = offset_x * kp;
+    float next_degree = last_degree + delta_degree;
+    if(next_degree < 0)
+        next_degree = 0;
+    else if(next_degree > 180)
+        next_degree = 180;
+    return (int)next_degree;
+}
+
+
+void servo_task(void)
+{
+	uint8_t degree;
+    struct pwm_config PWM2;
+    pwm_init(&PWM2,2);
+
+	while(1)
+	{
+		
+		float offset_x, offset_y;  
+		uint32_t face_data=gLinux_Data>>10;
+		uint16_t face_x = face_data&0x7FF;
+		uint16_t face_y = (face_data>>11);
+		printf("face_x=%x\n",face_x);
+		printf("face_y=%x\r\n",face_y);
+		calculate_offset(1280, 720, face_x, face_y, &offset_x, &offset_y);
+		degree=servo_control(offset_x);
+		printf("degree=%d\n",degree);
+		set_angle(&PWM2,degree);
+        vTaskDelay(5);
+
+	}
+}

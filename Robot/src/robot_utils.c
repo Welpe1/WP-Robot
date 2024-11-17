@@ -34,6 +34,22 @@ uint8_t read_bit(uint64_t value,uint8_t position)
 
 
 /**
+ * @brief 设置一个64位数的某一位
+ * @param value 输入的值(最多64位)
+ * @param position 要写的具体位
+ * @param bit 写入的值0或1
+ */
+void set_bit(uint64_t *value,uint8_t position,uint8_t bit)
+{
+    if(bit){
+        *value |= (1 << position);
+    }else{
+        *value &=~(1 << position);
+    }
+}
+
+
+/**
  * @brief 检查一个64位数有多少个1
  * @param value 输入的值(最多64位)
  */
