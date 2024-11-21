@@ -28,9 +28,7 @@ fi
 
 cd ${main_dir}/freertos/cvitek/install/lib
 rm -f *
-
 cd ${main_dir}
-
 source device/milkv-duo-sd/boardconfig.sh
 source build/milkvsetup.sh
 defconfig ${Config}

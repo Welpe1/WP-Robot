@@ -29,11 +29,10 @@ clear
 # fi
 
 cd ${main_dir}
-
 source device/milkv-duo-sd/boardconfig.sh
 source build/milkvsetup.sh
 defconfig ${Config}
-clean_uboot
+# clean_uboot
 build_uboot
 
 cp "${main_dir}/u-boot-2021.10/build/${Config}/arch/riscv/dts/${Config}.dtb" "${build_boot_dir}/${Config}/"
