@@ -1,6 +1,12 @@
 #!/bin/bash
 
+#此脚本可以编译fip.bin并上传至milkv duo
+#使用前确保编译过一次sdk
+#请将此脚本放置在duo-buildroot-sdk下
+#支持milkv duo 64和256
+
 Board=64
+main_dir=$(pwd)
   
 if [ "$Board" == "64" ]; then  
     Board=soc_cv1800b_milkv_duo_sd
@@ -12,21 +18,18 @@ elif [ "$Board" == "256" ]; then
     ssh_ip=192.168.42.2  
 fi  
 clear
-cd ./install/${Board}
+cd ${main_dir}/install/${Board}
 if [ -f fip.bin ]; then  
 	rm ./fip.bin  
-	sleep 2
-	echo "delete fip.bin"
+	echo "already delete fip.bin"
 	
 fi
 
-cd ../../
-pwd
 
-cd ./freertos/cvitek/install/lib
+cd ${main_dir}/freertos/cvitek/install/lib
 rm -f *
 
-cd ../../../../
+cd ${main_dir}
 
 source device/milkv-duo-sd/boardconfig.sh
 source build/milkvsetup.sh
@@ -36,7 +39,7 @@ defconfig ${Config}
 build_uboot
 
 
-cd ./install/${Board}
+cd ${main_dir}/install/${Board}
 if [ -f fip.bin ]; then  
 	ls -l fip.bin  
 	echo "need transfer fip.bin?  Y(y)/N(n)"
