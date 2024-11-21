@@ -114,7 +114,7 @@ static int __init chardev_init(void)
     }
 
     /* 创建类 (在/sys目录下创建类) */
-    stCharDev.class = class_create(THIS_MODULE, "xxx");
+    stCharDev.class = class_create(THIS_MODULE, CHARDEV_NAME);
     if(IS_ERR(stCharDev.class)){
         printk("class create fail\r\n");
         ret=PTR_ERR(stCharDev.class);
@@ -167,3 +167,5 @@ module_init(chardev_init);
 module_exit(chardev_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("WP_Robot");
+
+
