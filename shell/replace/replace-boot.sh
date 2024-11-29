@@ -1,5 +1,13 @@
 #!/bin/sh  
-  
+
+if [ -d "/root/rom" ]; then
+	:
+else
+    mkdir /root/rom
+fi
+
+
+
 if [ -f boot.sd ]; then  
     mount /dev/mmcblk0p1 /root/rom || {  
         echo "Failed to mount /dev/mmcblk0p1 to /root/rom"  

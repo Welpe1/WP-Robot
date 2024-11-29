@@ -1,5 +1,14 @@
 #!/bin/sh  
 
+
+if [ -d "/root/rom" ]; then
+	:
+else
+    mkdir /root/rom
+fi
+
+
+
 echo "input:0   cancel"
 echo "input:1   replace boot.sd"
 echo "input:2   replace fip.bin"
