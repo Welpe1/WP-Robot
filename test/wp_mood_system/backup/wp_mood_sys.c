@@ -12,10 +12,10 @@
 
 
 /**
- * @brief 根据名称匹配情绪
- * @param name 情绪名称
- * @return 情绪对应的邻接表地址
+ * @brief 根据邻接表名称匹配邻接表,返回邻接表地址
+ * @param name 邻接表名
  *      
+ * 
  */
 struct Mood_List* mood_list_locate_by_name(char *mood_name)
 {
@@ -29,11 +29,13 @@ struct Mood_List* mood_list_locate_by_name(char *mood_name)
     return NULL;
 }
 
+
 /**
- * @brief 根据名称检查情绪是否存在
- * @param name 情绪名称
- * @return 0 存在
- *         1 不存在
+ * @brief 根据邻接表名称匹配邻接表
+ *        如果存在,返回0
+ *        不存在,返回1
+ * @param name 邻接表名
+ *      
  * 
  */
 uint8_t mood_list_check_by_name(char *mood_name)
@@ -48,11 +50,9 @@ uint8_t mood_list_check_by_name(char *mood_name)
     return 1;
 
 }
-
 /**
- * @brief 根据ID匹配情绪
- * @param id 情绪ID
- * @return 情绪(邻接表)地址
+ * @brief 根据邻接表ID匹配邻接表,返回邻接表地址
+ * @param id 邻接表ID
  * 
  */
 struct Mood_List* mood_list_locate_by_id(uint8_t id)
@@ -67,12 +67,7 @@ struct Mood_List* mood_list_locate_by_id(uint8_t id)
     return NULL;
 }
 
-/**
- * @brief 根据名称匹配情绪,若存在则打印属性信息
- * @param name 情绪名称
- *      
- */
-uint8_t mood_list_print_by_name(char *mood_name)
+uint8_t mood_list_get_by_name(char *mood_name)
 {
     struct Mood_List *list=mood_list_locate_by_name(mood_name);
     if(list==NULL){
@@ -83,12 +78,7 @@ uint8_t mood_list_print_by_name(char *mood_name)
     
 }
 
-/**
- * @brief 根据ID匹配情绪,若存在则打印属性信息
- * @param name 情绪名称
- *      
- */
-uint8_t mood_list_print_by_id(uint8_t id)
+uint8_t mood_list_get_by_id(uint8_t id)
 {
     struct Mood_List *list=mood_list_locate_by_id(id);
     if(list==NULL){
@@ -99,11 +89,7 @@ uint8_t mood_list_print_by_id(uint8_t id)
     
 }
 
-/**
- * @brief 打印所有情绪的属性信息
- *      
- */
-void mood_list_print_all(void)
+void mood_list_get_all(void)
 {
     printf("----------------------------------\r\n");
     struct Mood_List *list=&stMood_List;
@@ -116,11 +102,7 @@ void mood_list_print_all(void)
 
 }
 
-/**
- * @brief 打印所有情绪节点的属性信息
- *      
- */
-void mood_node_print_all(void) 
+void mood_node_get_all(void) 
 {
     printf("-------------------start print the node----------------------\r\n");
     struct Mood_List *list=&stMood_List;
@@ -145,84 +127,14 @@ void mood_node_print_all(void)
 
 
 /**
- * @brief 设置情绪状态,即Mood_Property.status
- * @param list 要操作的情绪
- * @param position 具体位
- *                 第[0]位 运行状态
- *                 第[1]位 触发状态
- *  
- */
-void mood_set_status(struct Mood_List *list,uint8_t position,uint8_t status)
-{
-    if(status){
-        list->property.status |= (1 << position);
-    }else{
-        list->property.status &= ~(1 << position);
-    }
-   
-}
-
-/**
- * @brief 获取情绪状态,即Mood_Property.status
- * @param list 要操作的情绪
- * @param position 具体位
- *                 第[0]位 运行状态
- *                 第[1]位 触发状态
- *  
- */
-uint8_t mood_get_status(struct Mood_List *list,uint8_t position)
-{
-    if((list->property.status >> position) & 1) return 1;
-    else return 0;
-
-}
-
-
-/**
- * @brief 设置触发器id,即Mood_Property.status
- * @param list 要操作的情绪
- * @param position 具体位
- *                 第[0]位 运行状态
- *                 第[1]位 触发状态
- *  
- */
-void mood_set_trigger(struct Mood_List *list,uint8_t position,uint8_t status)
-{
-    if(status){
-        list->property.status |= (1 << position);
-    }else{
-        list->property.status &= ~(1 << position);
-    }
-   
-}
-
-/**
- * @brief 获取情绪状态,即Mood_Property.status
- * @param list 要操作的情绪
- * @param position 具体位
- *                 第[0]位 运行状态
- *                 第[1]位 触发状态
- *  
- */
-uint8_t mood_get_trigger(struct Mood_List *list,uint8_t position)
-{
-    if((list->property.status >> position) & 1) return 1;
-    else return 0;
-
-}
-
-/**
- * @brief 绑定两个情绪
+ * @brief 添加一个新的邻接表节点到图中
  *        默认传入参数正确
- * @param src 源情绪
- * @param dst 目标情绪
- * @param relevance 相关性参数,描述源情绪与目标情绪的相关性
- *                  
+ * @param src 源邻接表
+ * @param dst 目标邻接表
  * 
  */
-uint8_t mood_node_create(struct Mood_List *src,struct Mood_List *dst,float relevance)
+uint8_t mood_node_create(struct Mood_List *src,struct Mood_List *dst)
 {
-    relevance=LIMIT(relevance,-1,1);
     struct Mood_BindNode *node1=(struct Mood_BindNode*)malloc(sizeof(struct Mood_BindNode));
     if(node1 == NULL){
         printf("alloc fail\r\n");
@@ -236,12 +148,10 @@ uint8_t mood_node_create(struct Mood_List *src,struct Mood_List *dst,float relev
     }
 
     node1->dst=src->property.id;
-    node1->rel=relevance;
     node1->next=dst->head;
     dst->head=node1;
 
     node2->dst=dst->property.id;
-    node2->rel=relevance;
     node2->next=src->head;
     src->head=node2;
 
@@ -303,9 +213,10 @@ void mood_list_create(struct Mood_List *list,char *mood_name)
 {
     strncpy(list->property.name,mood_name,sizeof(list->property.name));
     list->property.id=gMood_Num;
-    list->property.value=VALUE_BASE;
-    mood_set_status(list,RUN_BIT,PEND);
-    mood_set_status(list,TRIGGER_BIT,TRIGGER_OFF);
+    list->property.status=PEND;
+    list->property.value=100;
+    list->property.trigger=TRIGGER_OFF;
+    list->property.group=POSITIVE;
     list->head=NULL;
     list->next=NULL;
 
@@ -357,10 +268,9 @@ void mood_list_destroy(char *mood_name)
  *        3.绑定情绪
  * @param src 源情绪 
  * @param dst 目标情绪
- * @param relecance 源情绪与目标情绪的相关性
  * 
  */
-uint8_t mood_bind(char *src,char *dst,float relevance)
+uint8_t mood_bind(char *src,char *dst)
 {
 
     uint8_t ret=0;
@@ -384,7 +294,7 @@ uint8_t mood_bind(char *src,char *dst,float relevance)
         }
     }
 
-    ret=mood_node_create(list1,list2,relevance);
+    ret=mood_node_create(list1,list2);
     return ret;
 
 }
@@ -507,18 +417,18 @@ uint8_t mood_destroy(char *mood_name)
  * @brief 打印情绪图
  * 
  */
-void mood_print(void)
+void mood_get(void)
 {
 
     struct Mood_List *list=&stMood_List;
     while(list!=NULL){    
-        printf("[%d]:%s=%.2f\r\n",list->property.id,list->property.name,list->property.value);
+        printf("[%d]:%s=%d\r\n",list->property.id,list->property.name,list->property.value);
 
         struct Mood_BindNode* node = list->head;
         while (node != NULL) {
                 struct Mood_List *list1=mood_list_locate_by_id(node->dst);
                 if(list1!=NULL){
-                    printf("--->[%d]:%s,rel=%.2f\n",node->dst,list1->property.name,node->rel);
+                    printf("--->[%d]:%s\n",node->dst,list1->property.name);
                 }
                 node = node->next;
             }
@@ -533,7 +443,7 @@ void mood_print(void)
 
 /**
  * @brief 设置情绪属性
- *        设置触发器状态(status[1]),trigger,value属性
+ *        只能设置group,trigger,value属性
  * 
  */
 uint8_t mood_set_property(char *mood_name,struct Mood_Property* property)
@@ -542,11 +452,7 @@ uint8_t mood_set_property(char *mood_name,struct Mood_Property* property)
     if(list==NULL){
         return 1;
     }
-    if((property->status >> TRIGGER_BIT) & 1) {
-        mood_set_status(list,TRIGGER_BIT,1);
-    }else{
-        mood_set_status(list,TRIGGER_BIT,0);
-    }
+    list->property.group=property->group;
     list->property.trigger=property->trigger;
     list->property.value=property->value;
 
@@ -554,74 +460,84 @@ uint8_t mood_set_property(char *mood_name,struct Mood_Property* property)
 }
 
 
-
-
 /**
- * @brief 1.将输入情绪的value+VALUE_INCREASE
- *        2.对value限幅
- *        3.同时遍历该情绪的所有节点(相关情绪),更改对应的value
+ * @brief 情绪值value调整
+ *        根据源情绪与目标情绪的关系,调整目标情绪的value,具体为
+ *        源情绪为POSITIVE 目标情绪为POSITIEV value +2
+ *                                 NORMAL          +1
+ *                                 NEGATIVE        -2
+ *        源情绪为NORMAL   目标情绪为POSITIEV value +1
+ *                                  NORMAL         +2
+ *                                  NEGATIVE       -1
+ *        源情绪为NEGATIVE 目标情绪为POSITIEV value  -2
+ *                                  NORMAL         -1
+ *                                  NEGATIVE       +2
  * 
+ * @param src 源情绪
+ * @param dst 目标情绪
  */
-void mood_increase(struct Mood_List *list)
+void mood_value_adjust(struct Mood_List *src,struct Mood_List *dst) 
 {
-    list->property.value+=VALUE_INCREASE;
-    list->property.value=LIMIT(list->property.value,VALUE_MIN,VALUE_MAX);
-    struct Mood_BindNode *node=list->head;
-    while (node!=NULL){
-        struct Mood_List *list1 =mood_list_locate_by_id(node->dst);
-        if(list1!=NULL){
-            list1->property.value+=VALUE_INCREASE * node->rel;
+    if(src->property.group==dst->property.group) {
+        dst->property.value+=2;
+    }else{
+        switch(src->property.group){
+            case POSITIVE:
+                if(dst->property.group==NORMAL){
+                    dst->property.value+=1;
+                }else if(dst->property.group==NEGATIVE){
+                    dst->property.value-=2;
+                }
+                break;
+            case NORMAL:
+                if(dst->property.group==POSITIVE){
+                    dst->property.value+=1;
+                }else if(dst->property.group==NEGATIVE){
+                    dst->property.value-=1;
+                }
+                break;
+            case NEGATIVE:
+                if (dst->property.group==POSITIVE){
+                    dst->property.value-=2;
+                }else if(dst->property.group==NORMAL){
+                    dst->property.value-=1;
+                }
+                break;
         }
-        node=node->next;
     }
 }
 
-/**
- * @brief 获取当前状态为READY的情绪
- * 
- */
-struct Mood_List* mood_locate_ready(void)
-{
-    struct Mood_List *list=&stMood_List;
-    while(list!=NULL){
-        if(mood_get_status(list,RUN_BIT)!=READY){
-            list=list->next;
-        }else{
-            return list;
-        }
-    }
-    return NULL;
-
-}
 
 /**
- * @brief 解析触发标志位,判断是哪一个事件触发
- *        并将对应的情绪的状态置为READY
- * 
- */
-struct Mood_List* mood_locate_trigger(uint16_t trigger)
-{
-    struct Mood_List *list=&stMood_List;
-    
-}
-
-
-/**
- * @brief 1.mood_locate_ready
- *        2.对当前状态为READY的情绪执行mood_increase操作
- *        2.将当前情绪的状态置为PEND
+ * @brief 1.遍历所有情绪,对当前状态为READY的情绪执行value+3操作
+ *        2.同时遍历该情绪链表的所有节点,对与其关联的情绪执行mood_value_adjust
+ *        3.将当前情绪的状态置为PEND
  *        
  */
-uint8_t mood_update(uint16_t trigger)
+void mood_increase(void)
 {
-    if(trigger){//有事件触发
-        struct Mood_List *list=mood_locate_trigger(trigger);
-
-
-    }else{//无事件触发
-
-
+    struct Mood_List *list1=&stMood_List;
+    while(list1!=NULL){
+        if(list1->property.status==READY){
+            list1->property.value+=3;   //当前情绪value+3
+            struct Mood_BindNode *node=list1->head;
+            while (node!=NULL){
+                struct Mood_List *list2 =mood_list_locate_by_id(node->dst);
+                if(list2!=NULL){
+                    mood_value_adjust(list1,list2);
+                }
+                node=node->next;
+            }
+            list1->property.status=PEND;
+        }else{
+            list1=list1->next;
+        }
     }
+}
+
+
+void mood_update(uint16_t trigger)
+{
 
 
 
@@ -629,26 +545,6 @@ uint8_t mood_update(uint16_t trigger)
 
 
 
-
-
-
-
-
-
-    struct Mood_List *list=mood_locate_ready();
-    if(list==NULL){
-        return 1;
-    }
-
-
-
-
-
-    mood_increase(list);
-
-
-    mood_set_status(list,RUN_BIT,PEND);
-    return 0;
 }
 
 
@@ -663,37 +559,24 @@ int main()
     mood_create("SPECAIL");
     
 
-    mood_bind("BASE","HAPPY",0.1);
-    mood_bind("HAPPY","PEACE",0.7);
-    mood_bind("HAPPY","SAD",-0.5);
-    mood_bind("PEACE","SAD",-0.2); 
-    mood_bind("PEACE","FEAR",-0.11);
-    mood_bind("PEACE","ANGRY",-0.1);
-    mood_bind("SAD","FEAR",0.11);
-    mood_bind("SAD","ANGRY",0.2);
+    mood_bind("BASE","HAPPY");
+    mood_bind("HAPPY","PEACE");
+    mood_bind("PEACE","SAD");
+    mood_bind("PEACE","FEAR");
+    mood_bind("PEACE","ANGRY");
+    mood_bind("SAD","FEAR");
+    mood_bind("SAD","ANGRY");
 
-    mood_print();
-
-    // mood_unbind("HAPPY","SAD");
-    // mood_unbind("ANGRY","SAD");
-
-    mood_destroy("ANGRY");
-    mood_print();
-
-
-    // mood_set_trigger_status(&stMood_List,1);
-    // printf("1111111111111=%d\r\n",stMood_List.property.status);
-
-
+    mood_get();
+    stMood_List.property.group=NEGATIVE;
 
     uint8_t i=10;
     while(i)
     {
-        mood_set_status(stMood_List.next,RUN_BIT,READY);
-        //stMood_List.next->property.status=READY;
+        stMood_List.next->property.status=READY;
         printf("i=%d\r\n",i);
-        mood_update(1);
-        mood_print();
+        mood_increase();
+        mood_get();
         i--;
     }
 
@@ -705,7 +588,10 @@ int main()
     // mood_unbind("PEACE","FEAR");
     // mood_node_get_all();
 
-
+    // mood_destroy("HAPPY");
+    // mood_destroy("FEAR");
+    // //mood_unbind("HAPPY","PEACE");
+    // mood_node_get_all();
 
 
     return 0;

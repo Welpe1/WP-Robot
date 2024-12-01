@@ -4,6 +4,9 @@
 #include <stdlib.h>
 
 
+#define SET_MOOD_STATUS(in,status) (in | (0x01&(status)))
+#define SET_TRIGGER_STATUS(in,status) (in | (0x02&(status)))
+
 uint8_t read_bit(uint64_t value,uint8_t position)
 {
     if((value >> position)& 1) return 1;
@@ -27,9 +30,9 @@ int main()
     // }
     // printf("bit[2]=%d\r\n",read_bit(0xF00FFFFFFFFFFF00,2));
     uint8_t a=0x00;
-    set_bit(&a,0,1);
-    printf("value=%d\r\n",a);
-    printf("bit[2]=%d\r\n",read_bit(a,2));
+    //set_bit(&a,0,1);
+    a=SET_MOOD_STATUS(a,1);
+    printf("mood %d=\r\n",a);
     
     return 0;
 }

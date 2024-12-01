@@ -3,24 +3,16 @@
 
 #include <stdint.h>
 
-#define LIMIT( x,min,max ) ( (x) < (min)  ? (min) : ( (x) > (max) ? (max) : (x) ) )
-#define LIMIT_MAX(x, max) ((x) > (max) ? (max) : (x))
-#define LIMIT_MIN(x, min) ((x) < (min) ? (min) : (x))
+#define SET_TRIGGER(sw, id) ((id)<<1 | (sw) & 0x0001)
 
 #define MAX_MOOD_NUMS   20      //最大情绪数量
-#define VALUE_MIN   10
-#define VALUE_BASE  100
-#define VALUE_MAX   200
-#define VALUE_INCREASE  3
-
-/*status*/
-#define RUN_BIT     0
-#define TRIGGER_BIT 1
 #define READY      0
 #define PEND       1
 #define TRIGGER_ON      0
 #define TRIGGER_OFF     1
-
+#define POSITIVE        0
+#define NORMAL          1
+#define NEGATIVE        2
 
 enum MOOD_TYPES{ 
     BASE=0,
@@ -53,11 +45,6 @@ static uint8_t gMood_Num=1;
 
 /**
  * @param dst 指向目标情绪id
- * @param rel(relevance) 与目标情绪的关联性
- *        取值范围-1~1
- *        -1~<0:负相关,如happy和sad
- *        0:不相关
- *        0~1:正相关,如sad和fear
  * @param next 指向下一个节点的指针
  * 
  * 
@@ -65,7 +52,6 @@ static uint8_t gMood_Num=1;
  */
 struct Mood_BindNode{
     uint8_t dst;                
-    float rel;
     struct Mood_BindNode* next;     
 };
 
@@ -73,29 +59,27 @@ struct Mood_BindNode{
 /**
  * @param name 情绪名(邻接链表名)
  * @param id   情绪ID(邻接链表ID)
- * @param status 运行状态,触发状态...
- *               [0]:运行状态
+ * @param status 情绪状态
  *               同一时刻只能有一种情绪的状态为READY,其它为PEND
  *               若此情绪开启了外界触发,则当有外界事件触发后,置为READY,处理完毕后置为PEND
  *               若未开启,则随机决定
- *               [1]:触发状态
- *               TRIGGER_ON     表示开启触发,即此情绪需要外界触发才能操作 
- *               TRIGGER_OFF    表示关闭触发
- *               ...
- * @param value 情绪值,范围VALUE_MIN~VALUE_MAX
+ * @param value 情绪值,范围10~200
  *              由value值决定最终显示哪一个表情
- * @param trigger 触发id,手动分配
- *                必须在触发状态置为TRIGGER_ON生效
- * 
+ * @param group 情绪组别
+ *              将情绪分为POSITIVE NORMAL NEGATIVE两组
+ * @param trigger 触发状态,
+ *                [0]表示是否开启外界触发,开启表示此情绪必须由外界事件触发
+ *                [15:1]表示触发id
  * 
  * 
  */
 struct Mood_Property{
     char name[10];          
     uint8_t id;             
-    uint8_t status;               
-    uint8_t trigger; 
-    float value;          
+    uint8_t status;         
+    uint8_t value;
+    uint8_t group;          
+    uint16_t trigger;          
 };
 
 struct Mood_List{
